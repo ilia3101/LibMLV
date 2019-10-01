@@ -6,6 +6,7 @@
 
 static void set_mlv_block_string(void * block, char * string)
 {
+    /* C standard says char is always 1 byte */
     for (int i = 0; i < 4; ++i) ((uint8_t *)block)[0] = string[0];
 }
 
@@ -49,7 +50,6 @@ void uninit_MLVWriter(MLVWriter_t * Writer)
     return;
 }
 
-/* Set a camera preset from enum MLVCamPreset */
 void MLVWriterSetCameraPreset(MLVWriter_t * Writer, enum MLVCamPreset Camera)
 {
     switch (Camera)
@@ -105,9 +105,6 @@ void MLVWriterSetCameraPreset(MLVWriter_t * Writer, enum MLVCamPreset Camera)
     }
 }
 
-/* For manually setting camera data if it is not in the presets.
- * You can pass NULL for any of these if you'd like not to provide that
- * specific info */
 void MLVWriterSetCameraInfo( MLVWriter_t * Writer,
                              char * CameraName,
                              uint32_t CameraModelID,
@@ -116,6 +113,4 @@ void MLVWriterSetCameraInfo( MLVWriter_t * Writer,
 {
     if (CameraName != NULL) strcpy(Writer->IDNT.cameraName, CameraName);
     Writer->IDNT.cameraModel = CameraModelID;
-
-    // if (LensName != NULL) strcpy(Writer->IDNT.cameraName, CameraName);
 }
