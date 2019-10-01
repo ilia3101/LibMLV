@@ -3,17 +3,36 @@
 
 #include <stdint.h>
 
+#include "mlv_structs.h"
+
 /********************************** Structure *********************************/
 
-/* Each value in MLVWriter_t is one of these, followed by its data */
-typedef struct {
-    uint32_t ID;
-    uint32_t data_size;
-} MLVWriter_value_t;
+typedef struct
+{
+    int frame_info_initialised;
+    int camera_info_initialised;
+    int headers_written;
 
-/* In reality the values array will be any size */
-typedef struct {
-    MLVWriter_value_t values[1];
+    /* MLV Headers */
+    mlv_file_hdr_t MLVI;
+
+    mlv_vidf_hdr_t VIDF;
+    mlv_audf_hdr_t AUDF;
+
+    mlv_rawi_hdr_t RAWI;
+    mlv_wavi_hdr_t WAVI;
+
+    mlv_expo_hdr_t EXPO;
+    mlv_lens_hdr_t LENS;
+    mlv_rtci_hdr_t RTCI;
+    mlv_idnt_hdr_t IDNT;
+    mlv_info_hdr_t INFO;
+    mlv_diso_hdr_t DISO;
+    mlv_mark_hdr_t MARK;
+    mlv_styl_hdr_t STYL;
+    mlv_elvl_hdr_t ELVL;
+    mlv_wbal_hdr_t WBAL;
+
 } MLVWriter_t;
 
 /******************************* Initialisation *******************************/
@@ -35,7 +54,15 @@ enum MLVCamPreset {
     Canon_5D_Mark_II,
     Canon_5D_Mark_III,
     Canon_6D,
-    Canon_7D
+    Canon_7D,
+    Canon_50D,
+    Canon_60D,
+    Canon_500D,
+    Canon_550D,
+    Canon_600D,
+    Canon_650D,
+    Canon_700D,
+    Canon_EOSM
 };
 
 /* Set a camera preset from enum MLVCamPreset */
@@ -45,7 +72,8 @@ void MLVWriterSetCameraPreset(MLVWriter_t * Writer, enum MLVCamPreset Camera);
  * You can pass NULL for any of these if you'd like not to provide that
  * specific info */
 void MLVWriterSetCameraInfo( MLVWriter_t * Writer,
-                             char * Name,
+                             char * CameraName,
+                             uint32_t CameraModelID,
                              double * MatrixDaylight,
                              double * MatrixTungsten,
                              char * LensName );

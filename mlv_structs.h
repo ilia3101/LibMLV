@@ -174,7 +174,7 @@ typedef struct {
     uint8_t     blockType[4];    /* Dual-ISO information */
     uint32_t    blockSize;
     uint64_t    timestamp;
-    uint32_t    dualMode;    /* bitmask: 0=off, 1=odd lines, 2=even lines, upper bits may be defined later */
+    uint32_t    dualMode;  d  /* bitmask: 0=off, 1=odd lines, 2=even lines, upper bits may be defined later */
     uint32_t    isoValue;
 }  mlv_diso_hdr_t;
 
