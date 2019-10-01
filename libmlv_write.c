@@ -27,21 +27,21 @@ void init_MLVWriter( MLVWriter_t * Writer,
     }
 
     /* Set correct strings in all mlv block headers */
-    set_mlv_block_string((void *)&Writer->MLVI, "MLVI");
-    set_mlv_block_string((void *)&Writer->VIDF, "VIDF");
-    set_mlv_block_string((void *)&Writer->AUDF, "AUDF");
-    set_mlv_block_string((void *)&Writer->RAWI, "RAWI");
-    set_mlv_block_string((void *)&Writer->WAVI, "WAVI");
-    set_mlv_block_string((void *)&Writer->EXPO, "EXPO");
-    set_mlv_block_string((void *)&Writer->LENS, "LENS");
-    set_mlv_block_string((void *)&Writer->RTCI, "RTCI");
-    set_mlv_block_string((void *)&Writer->IDNT, "IDNT");
-    set_mlv_block_string((void *)&Writer->INFO, "INFO");
-    set_mlv_block_string((void *)&Writer->DISO, "DISO");
-    set_mlv_block_string((void *)&Writer->MARK, "MARK");
-    set_mlv_block_string((void *)&Writer->STYL, "STYL");
-    set_mlv_block_string((void *)&Writer->ELVL, "ELVL");
-    set_mlv_block_string((void *)&Writer->WBAL, "WBAL");
+    set_mlv_block_string(&Writer->MLVI, "MLVI");
+    set_mlv_block_string(&Writer->VIDF, "VIDF");
+    set_mlv_block_string(&Writer->AUDF, "AUDF");
+    set_mlv_block_string(&Writer->RAWI, "RAWI");
+    set_mlv_block_string(&Writer->WAVI, "WAVI");
+    set_mlv_block_string(&Writer->EXPO, "EXPO");
+    set_mlv_block_string(&Writer->LENS, "LENS");
+    set_mlv_block_string(&Writer->RTCI, "RTCI");
+    set_mlv_block_string(&Writer->IDNT, "IDNT");
+    set_mlv_block_string(&Writer->INFO, "INFO");
+    set_mlv_block_string(&Writer->DISO, "DISO");
+    set_mlv_block_string(&Writer->MARK, "MARK");
+    set_mlv_block_string(&Writer->STYL, "STYL");
+    set_mlv_block_string(&Writer->ELVL, "ELVL");
+    set_mlv_block_string(&Writer->WBAL, "WBAL");
 }
 
 void uninit_MLVWriter(MLVWriter_t * Writer)
