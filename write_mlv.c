@@ -11,8 +11,7 @@ int main(int argc, char ** argv)
 
     init_MLVWriter(writer);
 
-    MLVWriterSetCameraPreset(writer, Canon_5D_Mark_II)
-
+    MLVWriterSetCameraPreset(writer, Canon_5D_Mark_II);
 
     uninit_MLVWriter(writer);
 

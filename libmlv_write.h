@@ -75,8 +75,7 @@ void MLVWriterSetCameraInfo( MLVWriter_t * Writer,
                              char * CameraName,
                              uint32_t CameraModelID,
                              double * MatrixDaylight,
-                             double * MatrixTungsten,
-                             char * LensName );
+                             double * MatrixTungsten );
 
 /********************************** Writing ***********************************/
 
