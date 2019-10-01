@@ -30,6 +30,54 @@
 
 /* make sure the structures are packed e.g. using #pragma pack */
 
+
+// TODO: Review the struct, copied over from raw.h of ML source code
+struct raw_info
+{
+    uint32_t api_version;   // increase this when changing the structure
+#if INTPTR_MAX == INT32_MAX // only works on 32-bit systems
+    void* buffer;           // points to image data
+#else
+    uint32_t do_not_use_this; // this can't work on 64-bit systems
+#endif
+
+    uint32_t height, width, pitch;
+    uint32_t frame_size;
+    uint32_t bits_per_pixel; // 14
+
+    uint32_t black_level; // autodetected
+    uint32_t white_level; // somewhere around 13000 - 16000, varies with camera, settings etc
+    // would be best to autodetect it, but we can't do this reliably yet
+
+    // TODO: Check if origin and size can be replaced with jpeg ones
+    union // DNG JPEG info
+    {
+        struct
+        {
+            uint32_t x, y;          // DNG JPEG top left corner
+            uint32_t width, height; // DNG JPEG size
+        } jpeg;
+        struct
+        {
+            uint32_t origin[2];
+            uint32_t size[2];
+        } crop;
+    };
+    union // DNG active sensor area (Y1, X1, Y2, X2)
+    {
+        struct
+        {
+            uint32_t y1, x1, y2, x2;
+        } active_area;
+        uint32_t dng_active_area[4];
+    };
+    uint32_t exposure_bias[2]; // DNG Exposure Bias (idk what's that)
+    uint32_t cfa_pattern;      // stick to 0x02010100 (RGBG) if you can
+    uint32_t calibration_illuminant1;
+    int32_t color_matrix1[18]; // DNG Color Matrix
+    uint32_t dynamic_range;    // EV x100, from analyzing black level and noise (very close to DxO)
+};
+
 typedef struct {
     uint8_t     blockType[4];
     uint32_t    blockSize;
@@ -174,7 +222,7 @@ typedef struct {
     uint8_t     blockType[4];    /* Dual-ISO information */
     uint32_t    blockSize;
     uint64_t    timestamp;
-    uint32_t    dualMode;  d  /* bitmask: 0=off, 1=odd lines, 2=even lines, upper bits may be defined later */
+    uint32_t    dualMode;    /* bitmask: 0=off, 1=odd lines, 2=even lines, upper bits may be defined later */
     uint32_t    isoValue;
 }  mlv_diso_hdr_t;
 
@@ -235,53 +283,5 @@ typedef struct {
     uint32_t    length;     /* data can be of arbitrary length and blocks are padded to 32 bits, so store real length */
  /* uint8_t     stringData[variable]; */
 }  mlv_colr_hdr_t;
-
-
-// TODO: Review the struct, copied over from raw.h of ML source code
-struct raw_info
-{
-    uint32_t api_version;   // increase this when changing the structure
-#if INTPTR_MAX == INT32_MAX // only works on 32-bit systems
-    void* buffer;           // points to image data
-#else
-    uint32_t do_not_use_this; // this can't work on 64-bit systems
-#endif
-
-    uint32_t height, width, pitch;
-    uint32_t frame_size;
-    uint32_t bits_per_pixel; // 14
-
-    uint32_t black_level; // autodetected
-    uint32_t white_level; // somewhere around 13000 - 16000, varies with camera, settings etc
-    // would be best to autodetect it, but we can't do this reliably yet
-
-    // TODO: Check if origin and size can be replaced with jpeg ones
-    union // DNG JPEG info
-    {
-        struct
-        {
-            uint32_t x, y;          // DNG JPEG top left corner
-            uint32_t width, height; // DNG JPEG size
-        } jpeg;
-        struct
-        {
-            uint32_t origin[2];
-            uint32_t size[2];
-        } crop;
-    };
-    union // DNG active sensor area (Y1, X1, Y2, X2)
-    {
-        struct
-        {
-            uint32_t y1, x1, y2, x2;
-        } active_area;
-        uint32_t dng_active_area[4];
-    };
-    uint32_t exposure_bias[2]; // DNG Exposure Bias (idk what's that)
-    uint32_t cfa_pattern;      // stick to 0x02010100 (RGBG) if you can
-    uint32_t calibration_illuminant1;
-    int32_t color_matrix1[18]; // DNG Color Matrix
-    uint32_t dynamic_range;    // EV x100, from analyzing black level and noise (very close to DxO)
-};
 
 #endif
