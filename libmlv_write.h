@@ -44,7 +44,9 @@ void init_MLVWriter( MLVWriter_t * Writer,
                      int Width,
                      int Height,
                      int BitDepth,
-                     int CompressedLJ92 );
+                     int CompressedLJ92,
+                     int BlackLevel,
+                     int WhiteLevel );
 
 void uninit_MLVWriter(MLVWriter_t * Writer);
 
@@ -74,8 +76,7 @@ void MLVWriterSetCameraPreset(MLVWriter_t * Writer, enum MLVCamPreset Camera);
 void MLVWriterSetCameraInfo( MLVWriter_t * Writer,
                              char * CameraName,
                              uint32_t CameraModelID,
-                             double * MatrixDaylight,
-                             double * MatrixTungsten );
+                             double * ColourMatrix );
 
 /********************************** Writing ***********************************/
 

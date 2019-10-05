@@ -31,6 +31,26 @@
 /* make sure the structures are packed e.g. using #pragma pack */
 
 
+/* Copied from mlv.h (GPL) - check if this is 0-K */
+#define MLV_VERSION_STRING "v2.0"
+#define MLV_VIDEO_CLASS_RAW          0x01
+#define MLV_VIDEO_CLASS_YUV          0x02
+#define MLV_VIDEO_CLASS_JPEG         0x03
+#define MLV_VIDEO_CLASS_H264         0x04
+
+#define MLV_VIDEO_CLASS_FLAG_LZMA    0x80
+#define MLV_VIDEO_CLASS_FLAG_DELTA   0x40
+#define MLV_VIDEO_CLASS_FLAG_LJ92    0x20
+
+#define MLV_AUDIO_CLASS_FLAG_LZMA    0x80
+
+#define MLV_FRAME_UNSPECIFIED 0
+#define MLV_FRAME_VIDF        1
+#define MLV_FRAME_AUDF        2
+/* End of GPL copied code */
+
+#pragma pack(push,1)
+
 // TODO: Review the struct, copied over from raw.h of ML source code
 struct raw_info
 {
@@ -283,5 +303,7 @@ typedef struct {
     uint32_t    length;     /* data can be of arbitrary length and blocks are padded to 32 bits, so store real length */
  /* uint8_t     stringData[variable]; */
 }  mlv_colr_hdr_t;
+
+#pragma pack(pop)
 
 #endif
