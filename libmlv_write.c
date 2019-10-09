@@ -4,19 +4,13 @@
 
 #include "libmlv_write.h"
 
-static void set_mlv_block_string(void * block, char * string)
-{
-    /* C standard says char is always 1 byte */
-    for (int i = 0; i < 4; ++i) ((uint8_t *)block)[i] = string[i];
-}
-
 /* Sets string and block size */
 #define init_mlv_block(Block, String) \
 { \
     char * block_name = String; \
-    mlv_hdr_t * block = &block;
-    set_mlv_block_string(&Block, String); \
-    ((uint32_t *)&Block)[1] = sizeof(typeof(Block)); \
+    mlv_hdr_t * mlv_block = &Block; \
+    for (int i = 0; i < 4; ++i) mlv_block->blockType[i] = string[i]; \
+    mlv_block->blockSize = sizeof(typeof(Block)); \
 }
 
 size_t sizeof_MLVWriter()
