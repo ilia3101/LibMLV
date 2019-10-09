@@ -2,6 +2,7 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <math.h>
 
 #include "libmlv_write.h"
 
@@ -25,10 +26,13 @@ void print_help()
     puts(" -o <output filename>     Output file name");
     puts(" -b <bitdepth>            Output bitdepth, 8 to 16, even numbers");
     puts(" -c <0/1>                 Output compression, 0=none, 1=LJ92");
+    puts("Example:");
+    puts(" ./write_mlv pic1.raw pic2.raw pic3.raw -o myvid.mlv -b 12 -c 1");
 }
 
 int main(int argc, char ** argv)
 {
+    /* Output parameters */
     char * output_name = "output.mlv";
     int num_input_files = 0;
     char ** input_files = alloca(argc * sizeof(char *));
@@ -37,26 +41,22 @@ int main(int argc, char ** argv)
     int width = 0;
     int height = 0;
 
+    /* Source data info */
+    int source_bitdepth = 14; /* Will be figured out later */
+
     /* Parse arguments */
     for (int i = 1; i < argc; ++i)
     {
-        if (!strcmp(argv[i], "-h"))
-        {
+        if (!strcmp(argv[i], "-h")) {
             print_help();
             exit(0);
-        }
-        else if (!strcmp(argv[i], "-o"))
-        {
+        } else if (!strcmp(argv[i], "-o")) {
             output_name = argv[i+1];
             ++i;
-        }
-        else if (!strcmp(argv[i], "-o"))
-        {
+        } else if (!strcmp(argv[i], "-o")) {
             output_name = argv[i+1];
             ++i;
-        }
-        else
-        {
+        } else {
             input_files[num_input_files] = argv[i];
             num_input_files++;
         }
@@ -79,23 +79,47 @@ int main(int argc, char ** argv)
         width = libraw_get_iwidth(Raw);
         height = libraw_get_iheight(Raw);
 
-        /* Initialise MLV writer on the first frame */
+        /* Initialise MLV writer and write MLV headers when it's first frame */
         if (i == 0)
         {
+            source_bitdepth = (int)ceil(log2(Raw->rawdata.color.maximum));
+
+            /********************* Initialise MLV writer **********************/
+
+            /* Set basic image parameters */
             init_MLVWriter( writer,
                             width, /* Width */
                             height, /* Height */
                             output_bitdepth, /* Bitdepth */
                             output_compression, /* Compressed LJ92? */
-                            Raw->imgdata.color.black, /* Black levbel */
-                            Raw->imgdata.color.maximum /* or maybe data_maximum */ /* White level */ );
+                            Raw->rawdata.color.black, /* Black levbel */
+                            Raw->rawdata.color.maximum /* or data_maximum? */ );
 
-            MLVWriterSetCameraInfo();
+            /*********************** Set camera info... ***********************/
+
+            char camera_name_string[32];
+            snprintf(camera_name_string, 32, "%s %s", Raw->idata.make, Raw->idata.model);
+
+            double matrix[9];
+            for (int y = 0; y < 3; ++y) {
+                for (int x = 0; x < 3; ++x) {
+                    matrix[y*3+x] = Raw->rawdata.color.cmatrix[x][y];
+                }
+            }
+
+            MLVWriterSetCameraInfo(writer, camera_name_string, 0, matrix);
+
+            /************************** Write headers *************************/
+
+            // /* After setting all the metadata we choose to set, MLVWriter tells
+            //  * us how much header data there is, gives it to us, and then we
+            //  * must write it to a file ourself */
+            // size_t header_size = MLVWriterGetHeaderSize(writer);
+
+            // uint8_t header_data[header_size];
+
+            // MLVWriterGetHeaderData(writer, header_data);
         }
-
-        // /* Subtract black or whatever */
-        // libraw_raw2image(Raw);
-        // libraw_subtract_black(Raw);
 
         libraw_recycle(Raw);
         libraw_close(Raw);

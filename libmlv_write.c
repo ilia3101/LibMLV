@@ -10,6 +10,15 @@ static void set_mlv_block_string(void * block, char * string)
     for (int i = 0; i < 4; ++i) ((uint8_t *)block)[i] = string[i];
 }
 
+/* Sets string and block size */
+#define init_mlv_block(Block, String) \
+{ \
+    char * block_name = String; \
+    mlv_hdr_t * block = &block;
+    set_mlv_block_string(&Block, String); \
+    ((uint32_t *)&Block)[1] = sizeof(typeof(Block)); \
+}
+
 size_t sizeof_MLVWriter()
 {
     return sizeof(MLVWriter_t);
@@ -26,22 +35,22 @@ void init_MLVWriter( MLVWriter_t * Writer,
     /* Zerro everything */
     for (int i = 0; i < sizeof(MLVWriter_t); ++i) ((uint8_t *)Writer)[i] = 0;
 
-    /* Set correct strings in all mlv block headers */
-    set_mlv_block_string(&Writer->MLVI, "MLVI");
-    set_mlv_block_string(&Writer->VIDF, "VIDF");
-    set_mlv_block_string(&Writer->AUDF, "AUDF");
-    set_mlv_block_string(&Writer->RAWI, "RAWI");
-    set_mlv_block_string(&Writer->WAVI, "WAVI");
-    set_mlv_block_string(&Writer->EXPO, "EXPO");
-    set_mlv_block_string(&Writer->LENS, "LENS");
-    set_mlv_block_string(&Writer->RTCI, "RTCI");
-    set_mlv_block_string(&Writer->IDNT, "IDNT");
-    set_mlv_block_string(&Writer->INFO, "INFO");
-    set_mlv_block_string(&Writer->DISO, "DISO");
-    set_mlv_block_string(&Writer->MARK, "MARK");
-    set_mlv_block_string(&Writer->STYL, "STYL");
-    set_mlv_block_string(&Writer->ELVL, "ELVL");
-    set_mlv_block_string(&Writer->WBAL, "WBAL");
+    /* Set correct strings and block sizes in all mlv block headers */
+    init_mlv_block(Writer->MLVI, "MLVI");
+    init_mlv_block(Writer->VIDF, "VIDF");
+    init_mlv_block(Writer->AUDF, "AUDF");
+    init_mlv_block(Writer->RAWI, "RAWI");
+    init_mlv_block(Writer->WAVI, "WAVI");
+    init_mlv_block(Writer->EXPO, "EXPO");
+    init_mlv_block(Writer->LENS, "LENS");
+    init_mlv_block(Writer->RTCI, "RTCI");
+    init_mlv_block(Writer->IDNT, "IDNT");
+    init_mlv_block(Writer->INFO, "INFO");
+    init_mlv_block(Writer->DISO, "DISO");
+    init_mlv_block(Writer->MARK, "MARK");
+    init_mlv_block(Writer->STYL, "STYL");
+    init_mlv_block(Writer->ELVL, "ELVL");
+    init_mlv_block(Writer->WBAL, "WBAL");
 
     /* Set resolution in all possible fields */
     Writer->RAWI.xRes = Width;
