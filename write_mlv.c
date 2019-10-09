@@ -57,8 +57,7 @@ int main(int argc, char ** argv)
             output_name = argv[i+1];
             ++i;
         } else {
-            input_files[num_input_files] = argv[i];
-            num_input_files++;
+            input_files[num_input_files++] = argv[i];
         }
     }
 
@@ -71,7 +70,7 @@ int main(int argc, char ** argv)
     {
         /* Get raw files */
         libraw_data_t * Raw = libraw_init(0);
-        if (libraw_open_file(Raw, argv[i])) puts("failed to open file");
+        if (libraw_open_file(Raw, input_files[i])) puts("failed to open file");
         if (libraw_unpack(Raw)) puts("failed to unpack");
 
         /* This is the bayer data */
