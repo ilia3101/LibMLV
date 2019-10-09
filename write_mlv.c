@@ -71,7 +71,7 @@ int main(int argc, char ** argv)
     {
         /* Get raw files */
         libraw_data_t * Raw = libraw_init(0);
-        if (libraw_open_file(Raw, argv[1])) puts("failed to open file");
+        if (libraw_open_file(Raw, argv[i])) puts("failed to open file");
         if (libraw_unpack(Raw)) puts("failed to unpack");
 
         /* This is the bayer data */
@@ -82,7 +82,8 @@ int main(int argc, char ** argv)
         /* Initialise MLV writer and write MLV headers when it's first frame */
         if (i == 0)
         {
-            source_bitdepth = (int)ceil(log2(Raw->rawdata.color.maximum));
+            /* Round bitdepth up to a multiple of 2 */
+            source_bitdepth = (int)ceil(log2(Raw->rawdata.color.maximum)/2) * 2;
 
             /********************* Initialise MLV writer **********************/
 
@@ -120,14 +121,22 @@ int main(int argc, char ** argv)
 
             // MLVWriterGetHeaderData(writer, header_data);
         }
+        else
+        {
+            /* Make sure everything is right */
+            if (libraw_get_iwidth(Raw) != width || libraw_get_iheight(Raw) != height)
+            {
+                printf("Error! Input file %s has different dimensions!");
+                libraw_recycle(Raw);
+                libraw_close(Raw);
+                break;
+            }
+        }
+        
 
         libraw_recycle(Raw);
         libraw_close(Raw);
     }
-
-    MLVWriterSetCameraPreset(writer, Canon_5D_Mark_II);
-
-    uninit_MLVWriter(writer);
 
     return 0;
 }
