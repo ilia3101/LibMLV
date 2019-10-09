@@ -9,8 +9,9 @@
 
 typedef struct
 {
-    int frame_info_initialised;
-    int camera_info_initialised;
+    int frame_info_set; /* Basic info: width, height, bitdepth, compression */
+    int camera_info_added; /* Camera info, like camera matrix and  */
+    int lens_info_added;
     int headers_written;
 
     /* MLV Headers */
