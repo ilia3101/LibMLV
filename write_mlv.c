@@ -50,11 +50,12 @@ int main(int argc, char ** argv)
             ++i;
         } else if (!strcmp(argv[i], "-o")) {
             output_name = argv[i+1];
-            printf("Output name set to: %s\n", output_name);
+            printf("Output name set to %s\n", output_name);
             ++i;
         } else if (!strcmp(argv[i], "-c")) {
             output_compression = atoi(argv[i+1]);
-            printf("Compression set to: %s\n", output_name);
+            char * compression = (output_compression) ? "none" : "LJ92";
+            printf("Compression set to %i (none)\n", output_compression);
             ++i;
         } else if (!strcmp(argv[i], "-f")) {
             output_fps_top = atoi(argv[i+1]);
@@ -71,6 +72,7 @@ int main(int argc, char ** argv)
     /* Allocate memory for the mlv writer object */
     MLVWriter_t * writer = alloca(sizeof_MLVWriter());
 
+    /* Open file and create pointer for packed frame data */
     FILE * mlv_file = fopen(output_name, "wb");
     uint8_t * packed_frame_data = NULL;
 
@@ -128,35 +130,47 @@ int main(int argc, char ** argv)
              * must write it to a file ourself */
             size_t header_size = MLVWriterGetHeaderSize(writer);
 
-            /* Allocate array for header data */
-            uint8_t header_data[header_size];
+            {
+                /* Allocate array for header data */
+                uint8_t header_data[header_size];
 
-            /* Get header data */
-            MLVWriterGetHeaderData(writer, header_data);
+                /* Get header data */
+                MLVWriterGetHeaderData(writer, header_data);
 
-            /* Write header data to the file */
-            fwrite(header_data, header_size, 1, mlv_file);
+                /* Write header data to the file */
+                fwrite(header_data, header_size, 1, mlv_file);
+            }
         }
         else
         {
             /* Make sure everything is right */
-            if (libraw_get_iwidth(Raw) != width || libraw_get_iheight(Raw) != height)
+            if ( libraw_get_iwidth(Raw) != width
+             || libraw_get_iheight(Raw) != height)
             {
                 printf("File %s has different resolution!\n", input_files[i]);
             }
         }
 
-        /* No compression support just yet */
-        size_t frame_size = (width * height * output_bitdepth) / 8;
+        /* Calculate frame size, TODO: compressed frames will be different */
+        size_t frame_s = (width * height * output_bitdepth) / 8;
 
-        /* Write the frame */
-        size_t frame_header_size = MLVWriterGetFrameHeaderSize(writer, frame_size);
+        /*************************** Write the frame **************************/
+
+        /* Get frame header size, telling MLVWriter how big the frame is */
+        size_t frame_header_size = MLVWriterGetFrameHeaderSize(writer, frame_s);
+
+        {
+            /* Create memory for frame header */
+            uint8_t frame_header_data[frame_header_size];
+
+            /* Get frame header */
+        }
 
         libraw_recycle(Raw);
         libraw_close(Raw);
     }
 
-    free(packed_frame_data);
+    if (packed_frame_data != NULL) free(packed_frame_data);
     fclose(mlv_file);
     uninit_MLVWriter(writer);
 
