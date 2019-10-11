@@ -186,7 +186,7 @@ void MLVWriterSetCameraInfo( MLVWriter_t * Writer,
  * to SizeVariable. For calculating size of header data that will be written */
 #define mlv_add_block_size(Block, SizeVariable) \
 { \
-    if (Block.write) {SizeVariable += Block.header.blockSize; printf("Addedblock\n");}\
+    if (Block.write) {SizeVariable += Block.header.blockSize; } \
 }
 
 size_t MLVWriterGetHeaderSize(MLVWriter_t * Writer)
@@ -217,7 +217,7 @@ size_t MLVWriterGetHeaderSize(MLVWriter_t * Writer)
     if (Block.write) \
     { \
         memcpy(Pointer, &Block, sizeof(Block.block)); \
-        Pointer += sizeof(Block.block);  printf("Copiedblock\n"); \
+        Pointer += sizeof(Block.block); \
     } \
 }
 
