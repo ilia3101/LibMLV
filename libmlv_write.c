@@ -10,7 +10,7 @@
     char * block_name = String; \
     mlv_hdr_t * mlv_block = (mlv_hdr_t *)&Block; \
     for (int i = 0; i < 4; ++i) mlv_block->blockType[i] = String[i]; \
-    mlv_block->blockSize = sizeof(typeof(Block)); \
+    mlv_block->blockSize = sizeof(Block); \
 }
 
 /* Marks a block as to be written */
@@ -32,7 +32,7 @@ void init_MLVWriter( MLVWriter_t * Writer,
                      int BlackLevel,
                      int WhiteLevel,
                      int FPSNumerator,
-                     int FPSDenominator  )
+                     int FPSDenominator )
 {
     /* Zerro everything */
     for (int i = 0; i < sizeof(MLVWriter_t); ++i) ((uint8_t *)Writer)[i] = 0;
@@ -158,7 +158,7 @@ void MLVWriterSetCameraInfo( MLVWriter_t * Writer,
                              double * ColourMatrix )
 {
     if (CameraName != NULL)
-        strcpy((char *)Writer->IDNT.block.cameraName, CameraName);
+        strcpy((char *)&Writer->IDNT.block.cameraName, CameraName);
     Writer->IDNT.block.cameraModel = CameraModelID;
 
     int32_t * matrix = Writer->RAWI.block.raw_info.color_matrix1;
@@ -177,13 +177,16 @@ void MLVWriterSetCameraInfo( MLVWriter_t * Writer,
                              -817, 10000,  1215, 10000, 6664, 10000 };
         for (int i = 0; i < 18; ++i) matrix[i] = mat5D2[i];
     }
+
+    /* Set IDNT block to be written */
+    mlv_set_write_block(Writer->IDNT)
 }
 
 /* Checks if Block should be written, and if it is, the block's size is added
  * to SizeVariable. For calculating size of header data that will be written */
 #define mlv_add_block_size(Block, SizeVariable) \
 { \
-    if (Block.write) SizeVariable += Block.header.blockSize; \
+    if (Block.write) {SizeVariable += Block.header.blockSize; printf("Addedblock\n");}\
 }
 
 size_t MLVWriterGetHeaderSize(MLVWriter_t * Writer)
@@ -211,8 +214,11 @@ size_t MLVWriterGetHeaderSize(MLVWriter_t * Writer)
  * pointer ready for the next block to be copied to it */
 #define mlv_copy_header_block(Block, Pointer) \
 { \
-    memcpy(Pointer, &Block, sizeof(Block.block)); \
-    Pointer += sizeof(Block.block); \
+    if (Block.write) \
+    { \
+        memcpy(Pointer, &Block, sizeof(Block.block)); \
+        Pointer += sizeof(Block.block);  printf("Copiedblock\n"); \
+    } \
 }
 
 void MLVWriterGetHeaderData(MLVWriter_t * Writer, void * HeaderData)
@@ -232,4 +238,19 @@ void MLVWriterGetHeaderData(MLVWriter_t * Writer, void * HeaderData)
     mlv_copy_header_block(Writer->STYL, pointer)
     mlv_copy_header_block(Writer->ELVL, pointer)
     mlv_copy_header_block(Writer->WBAL, pointer)
+}
+
+size_t MLVWriterGetFrameHeaderSize(MLVWriter_t * Writer)
+{
+    return sizeof(mlv_vidf_hdr_t);
+}
+
+void MLVWriterGetFrameHeaderData( MLVWriter_t * Writer,
+                                  uint64_t FrameIndex,
+                                  size_t FrameSize,
+                                  void * FrameHeaderData )
+{
+    Writer->VIDF.blockSize = sizeof(Writer->VIDF) + FrameSize;
+
+    memcpy(FrameHeaderData, &Writer->VIDF, sizeof(Writer->VIDF));
 }

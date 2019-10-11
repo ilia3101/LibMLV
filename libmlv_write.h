@@ -19,10 +19,6 @@ struct \
 
 typedef struct
 {
-    int frame_info_set; /* Basic info: width, height, bitdepth, compression */
-    int camera_info_added; /* Camera info, like camera matrix and name */
-    int lens_info_added;
-
     /* Header blocks */
     MLVWriter_header_block(mlv_file_hdr_t, MLVI)
     MLVWriter_header_block(mlv_rawi_hdr_t, RAWI)
@@ -99,5 +95,15 @@ size_t MLVWriterGetHeaderSize(MLVWriter_t * Writer);
  * use this function to get all of that data output to HeaderData pointer. Then
  * you must write it to a file yourself */
 void MLVWriterGetHeaderData(MLVWriter_t * Writer, void * HeaderData);
+
+/* Size of frame header */
+size_t MLVWriterGetFrameHeaderSize(MLVWriter_t * Writer);
+
+/* Returns frame header data for a frame of index FrameIndex. You must write
+ * this to a file, followed by the actual frame data */
+void MLVWriterGetFrameHeaderData( MLVWriter_t * Writer,
+                                  uint64_t FrameIndex,
+                                  size_t FrameSize,
+                                  void * FrameHeaderData );
 
 #endif

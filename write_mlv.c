@@ -21,6 +21,41 @@ void print_help()
     puts("Example:");
     puts(" ./write_mlv pic1.raw pic2.raw pic3.raw -o myvid.mlv -b 12 -c 1");
 }
+/* Very uzeful diagonal flip feature */
+static uint8_t diagonal_flip[9] = { 0, 3, 6, 1, 4, 7, 2, 5, 8 };
+/* Makes it like a function */
+#define diag_flip(X) diagonal_flip[(X)]
+
+void invertMatrix(double * inputMatrix, double * outputMatrix)
+{
+    for (int y = 0; y < 3; ++y)
+    {
+        for (int x = 0; x < 3; ++x)
+        {
+            /* Determenant locations for 2 x 2 */
+            int dX[2] = { (x + 1) % 3, (x + 2) % 3 };
+            int dY[2] = { 3 * ((y + 1) % 3), 3 * ((y + 2) % 3) };
+
+            outputMatrix[ diag_flip(y*3 + x) ] = 
+            (   /* Determinant caluclation 2 x 2 */
+                  inputMatrix[dY[0] + dX[0]] 
+                * inputMatrix[dY[1] + dX[1]]
+                - inputMatrix[dY[0] + dX[1]] 
+                * inputMatrix[dY[1] + dX[0]]
+            );
+        }
+    }
+
+    /* Calculate whole matrix determinant */
+    double determinant = 1.0 / (
+          inputMatrix[0] * ( inputMatrix[8] * inputMatrix[4] - inputMatrix[7] * inputMatrix[5] )
+        - inputMatrix[3] * ( inputMatrix[8] * inputMatrix[1] - inputMatrix[7] * inputMatrix[2] )
+        + inputMatrix[6] * ( inputMatrix[5] * inputMatrix[1] - inputMatrix[4] * inputMatrix[2] )
+    );
+
+    /* Multiply all elements by the determinant */
+    for (int i = 0; i < 9; ++i) outputMatrix[i] *= determinant;
+}
 
 int main(int argc, char ** argv)
 {
@@ -87,8 +122,8 @@ int main(int argc, char ** argv)
 
         /* This is the bayer data */
         uint16_t * bayerimage = Raw->rawdata.raw_image;
-        width = libraw_get_iwidth(Raw);
-        height = libraw_get_iheight(Raw);
+        width = libraw_get_raw_width(Raw);
+        height = libraw_get_raw_height(Raw);
 
         /* Initialise MLV writer and write MLV headers when it's first frame */
         if (i == 0)
@@ -117,11 +152,15 @@ int main(int argc, char ** argv)
             double matrix[9];
             for (int y = 0; y < 3; ++y) {
                 for (int x = 0; x < 3; ++x) {
-                    matrix[y*3+x] = Raw->rawdata.color.cmatrix[y][x];
+                    printf("%3.5f, ", Raw->rawdata.color.cam_xyz[y][x]);
+                    matrix[y*3+x] = Raw->rawdata.color.cam_xyz[y][x];
                 }
+                printf("\n");
             }
 
             MLVWriterSetCameraInfo(writer, cam_name, 0, matrix);
+
+            // MLVWriterSetCameraPreset(writer, Canon_5D_Mark_III);
 
             /************************** Write headers *************************/
 
@@ -152,19 +191,26 @@ int main(int argc, char ** argv)
         }
 
         /* Calculate frame size, TODO: compressed frames will be different */
-        size_t frame_s = (width * height * output_bitdepth) / 8;
+        size_t frame_size = (width * height * output_bitdepth) / 8;
 
         /*************************** Write the frame **************************/
 
         /* Get frame header size, telling MLVWriter how big the frame is */
-        size_t frame_header_size = MLVWriterGetFrameHeaderSize(writer, frame_s);
+        size_t frame_header_size = MLVWriterGetFrameHeaderSize(writer);
 
         {
             /* Create memory for frame header */
             uint8_t frame_header_data[frame_header_size];
 
             /* Get frame header */
+            MLVWriterGetFrameHeaderData(writer,i,frame_size,frame_header_data);
+
+            /* Write it */
+            fwrite(frame_header_data, frame_header_size, 1, mlv_file);
         }
+
+        /* Now write actual frame data */
+        fwrite(bayerimage, frame_size, 1, mlv_file);
 
         libraw_recycle(Raw);
         libraw_close(Raw);
