@@ -8,16 +8,7 @@
 
 #include "librawheaders/libraw.h"
 
-void writebmp(unsigned char * data, int width, int height, char * filename) {
-    int rowbytes = width*3+(4-(width*3%4))%4, imagesize = rowbytes*height, y;
-    unsigned short header[] = {0x4D42,0,0,0,0,26,0,12,0,width,height,1,24};
-    *((unsigned int *)(header+1)) = 26 + imagesize-((4-(width*3%4))%4);
-    FILE * file = fopen(filename, "wb");
-    fwrite(header, 1, 26, file);
-    for (y = 0; y < height; ++y) fwrite(data+(y*width*3), rowbytes, 1, file);
-    fwrite(data, width*3, 1, file);
-    fclose(file);
-}
+/* This file is kind of a tutorial for using MLVWriter */
 
 void print_help()
 {
@@ -50,10 +41,12 @@ int main(int argc, char ** argv)
         if (!strcmp(argv[i], "-h")) {
             print_help();
             exit(0);
-        } else if (!strcmp(argv[i], "-o")) {
-            output_name = argv[i+1];
+        } else if (!strcmp(argv[i], "-b")) {
+            puts("set bitdepth");
+            // bitdepth = argv[i+1];
             ++i;
         } else if (!strcmp(argv[i], "-o")) {
+            puts("set output name");
             output_name = argv[i+1];
             ++i;
         } else {
@@ -64,12 +57,15 @@ int main(int argc, char ** argv)
     /****************************** MLV creation ******************************/
 
     MLVWriter_t * writer = alloca(sizeof_MLVWriter());
+    FILE * mlv_file = fopen(output_name, "wb");
+    uint8_t * packed_frame_data = NULL;
 
     /* Write each frame */
     for (int i = 0; i < num_input_files; ++i)
     {
         /* Get raw files */
         libraw_data_t * Raw = libraw_init(0);
+        puts(input_files[i]);
         if (libraw_open_file(Raw, input_files[i])) puts("failed to open file");
         if (libraw_unpack(Raw)) puts("failed to unpack");
 
@@ -97,45 +93,53 @@ int main(int argc, char ** argv)
 
             /*********************** Set camera info... ***********************/
 
-            char camera_name_string[32];
-            snprintf(camera_name_string, 32, "%s %s", Raw->idata.make, Raw->idata.model);
+            char cam_name[32];
+            snprintf(cam_name, 32, "%s %s", Raw->idata.make, Raw->idata.model);
 
             double matrix[9];
             for (int y = 0; y < 3; ++y) {
                 for (int x = 0; x < 3; ++x) {
-                    matrix[y*3+x] = Raw->rawdata.color.cmatrix[x][y];
+                    matrix[y*3+x] = Raw->rawdata.color.cmatrix[y][x];
                 }
             }
 
-            MLVWriterSetCameraInfo(writer, camera_name_string, 0, matrix);
+            MLVWriterSetCameraInfo(writer, cam_name, 0, matrix);
 
             /************************** Write headers *************************/
 
-            // /* After setting all the metadata we choose to set, MLVWriter tells
-            //  * us how much header data there is, gives it to us, and then we
-            //  * must write it to a file ourself */
-            // size_t header_size = MLVWriterGetHeaderSize(writer);
+            /* After setting all the metadata we choose to set, MLVWriter tells
+             * us how much header data there is, gives it to us, and then we
+             * must write it to a file ourself */
+            size_t header_size = MLVWriterGetHeaderSize(writer);
 
-            // uint8_t header_data[header_size];
+            /* Allocate array for header data */
+            uint8_t header_data[header_size];
 
-            // MLVWriterGetHeaderData(writer, header_data);
+            /* Get header data */
+            MLVWriterGetHeaderData(writer, header_data);
+
+            /* Write header data to the file */
+            fwrite(header_data, header_size, 1, mlv_file);
         }
         else
         {
             /* Make sure everything is right */
             if (libraw_get_iwidth(Raw) != width || libraw_get_iheight(Raw) != height)
             {
-                printf("Error! Input file %s has different dimensions!");
+                printf("File %s has different resolution!\n", input_files[i]);
                 libraw_recycle(Raw);
                 libraw_close(Raw);
                 break;
             }
         }
-        
 
         libraw_recycle(Raw);
         libraw_close(Raw);
     }
+
+    free(packed_frame_data);
+    fclose(mlv_file);
+    uninit_MLVWriter(writer);
 
     return 0;
 }

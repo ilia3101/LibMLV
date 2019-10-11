@@ -1,4 +1,5 @@
 gcc -c -O3 libmlv_write.c
+gcc -c -O3 libmlv_tools.c
 gcc -c -O3 write_mlv.c
 
 if [ ! -e libraw_r.a ]; then
