@@ -13,6 +13,12 @@
     mlv_block->blockSize = sizeof(typeof(Block)); \
 }
 
+/* Marks a block as to be written */
+#define mlv_set_write_block(Block) \
+{ \
+    Block.write = 1; \
+}
+
 size_t sizeof_MLVWriter()
 {
     return sizeof(MLVWriter_t);
@@ -73,6 +79,10 @@ void init_MLVWriter( MLVWriter_t * Writer,
     /* MLV version */
     char * ver = MLV_VERSION_STRING;
     for (int i=0; ver[i]!=0; ++i) Writer->MLVI.block.versionString[i] = ver[i];
+
+    /* Set MLVI and RAWI to be written */
+    mlv_set_write_block(Writer->MLVI)
+    mlv_set_write_block(Writer->RAWI)
 }
 
 void uninit_MLVWriter(MLVWriter_t * Writer)
@@ -173,6 +183,7 @@ void MLVWriterSetCameraInfo( MLVWriter_t * Writer,
 size_t MLVWriterGetHeaderSize(MLVWriter_t * Writer)
 {
     size_t header_size = 0;
+
     mlv_add_block_size(Writer->MLVI, header_size)
     mlv_add_block_size(Writer->RAWI, header_size)
     mlv_add_block_size(Writer->WAVI, header_size)
@@ -186,6 +197,7 @@ size_t MLVWriterGetHeaderSize(MLVWriter_t * Writer)
     mlv_add_block_size(Writer->STYL, header_size)
     mlv_add_block_size(Writer->ELVL, header_size)
     mlv_add_block_size(Writer->WBAL, header_size)
+
     return header_size;
 }
 
@@ -201,8 +213,17 @@ void MLVWriterGetHeaderData(MLVWriter_t * Writer, void * HeaderData)
 {
     uint8_t * pointer = HeaderData;
 
-    mlv_copy_header_block(Writer->MLVI, pointer);
-    mlv_copy_header_block(Writer->RAWI, pointer);
-    mlv_copy_header_block(Writer->IDNT, pointer);
-    mlv_copy_header_block(Writer->LENS, pointer);
+    mlv_copy_header_block(Writer->MLVI, header_size)
+    mlv_copy_header_block(Writer->RAWI, header_size)
+    mlv_copy_header_block(Writer->WAVI, header_size)
+    mlv_copy_header_block(Writer->EXPO, header_size)
+    mlv_copy_header_block(Writer->LENS, header_size)
+    mlv_copy_header_block(Writer->RTCI, header_size)
+    mlv_copy_header_block(Writer->IDNT, header_size)
+    mlv_copy_header_block(Writer->INFO, header_size)
+    mlv_copy_header_block(Writer->DISO, header_size)
+    mlv_copy_header_block(Writer->MARK, header_size)
+    mlv_copy_header_block(Writer->STYL, header_size)
+    mlv_copy_header_block(Writer->ELVL, header_size)
+    mlv_copy_header_block(Writer->WBAL, header_size)
 }
