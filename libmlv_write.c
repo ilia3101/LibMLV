@@ -30,7 +30,9 @@ void init_MLVWriter( MLVWriter_t * Writer,
                      int BitDepth,
                      int Compressed,
                      int BlackLevel,
-                     int WhiteLevel )
+                     int WhiteLevel,
+                     int FPSNumerator,
+                     int FPSDenominator  )
 {
     /* Zerro everything */
     for (int i = 0; i < sizeof(MLVWriter_t); ++i) ((uint8_t *)Writer)[i] = 0;
@@ -79,6 +81,10 @@ void init_MLVWriter( MLVWriter_t * Writer,
     /* MLV version */
     char * ver = MLV_VERSION_STRING;
     for (int i=0; ver[i]!=0; ++i) Writer->MLVI.block.versionString[i] = ver[i];
+
+    /* Framerate */
+    Writer->MLVI.block.sourceFpsNom = FPSNumerator;
+    Writer->MLVI.block.sourceFpsDenom = FPSNumerator;
 
     /* Set MLVI and RAWI to be written */
     mlv_set_write_block(Writer->MLVI)
@@ -213,17 +219,17 @@ void MLVWriterGetHeaderData(MLVWriter_t * Writer, void * HeaderData)
 {
     uint8_t * pointer = HeaderData;
 
-    mlv_copy_header_block(Writer->MLVI, header_size)
-    mlv_copy_header_block(Writer->RAWI, header_size)
-    mlv_copy_header_block(Writer->WAVI, header_size)
-    mlv_copy_header_block(Writer->EXPO, header_size)
-    mlv_copy_header_block(Writer->LENS, header_size)
-    mlv_copy_header_block(Writer->RTCI, header_size)
-    mlv_copy_header_block(Writer->IDNT, header_size)
-    mlv_copy_header_block(Writer->INFO, header_size)
-    mlv_copy_header_block(Writer->DISO, header_size)
-    mlv_copy_header_block(Writer->MARK, header_size)
-    mlv_copy_header_block(Writer->STYL, header_size)
-    mlv_copy_header_block(Writer->ELVL, header_size)
-    mlv_copy_header_block(Writer->WBAL, header_size)
+    mlv_copy_header_block(Writer->MLVI, pointer)
+    mlv_copy_header_block(Writer->RAWI, pointer)
+    mlv_copy_header_block(Writer->WAVI, pointer)
+    mlv_copy_header_block(Writer->EXPO, pointer)
+    mlv_copy_header_block(Writer->LENS, pointer)
+    mlv_copy_header_block(Writer->RTCI, pointer)
+    mlv_copy_header_block(Writer->IDNT, pointer)
+    mlv_copy_header_block(Writer->INFO, pointer)
+    mlv_copy_header_block(Writer->DISO, pointer)
+    mlv_copy_header_block(Writer->MARK, pointer)
+    mlv_copy_header_block(Writer->STYL, pointer)
+    mlv_copy_header_block(Writer->ELVL, pointer)
+    mlv_copy_header_block(Writer->WBAL, pointer)
 }

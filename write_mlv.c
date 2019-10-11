@@ -13,10 +13,11 @@
 void print_help()
 {
     puts("Arguments:");
-    puts(" -h                       Print help");
-    puts(" -o <output filename>     Output file name");
-    puts(" -b <bitdepth>            Output bitdepth, 8 to 16, even numbers");
-    puts(" -c <0/1>                 Output compression, 0=none, 1=LJ92");
+    puts(" -h                    Print help");
+    puts(" -o <output filename>  Output file name");
+    puts(" -b <bitdepth>         Output bitdepth, 8 to 16, even numbers");
+    puts(" -c <0/1>              Output compression, 0=none, 1=LJ92");
+    puts(" -f <top> <bottom>     Framerate as a fraction, ex: -f 24000 1001");
     puts("Example:");
     puts(" ./write_mlv pic1.raw pic2.raw pic3.raw -o myvid.mlv -b 12 -c 1");
 }
@@ -31,6 +32,8 @@ int main(int argc, char ** argv)
     int output_compression = 0;
     int width = 0;
     int height = 0;
+    int output_fps_top = 24000;
+    int output_fps_bottom = 1001;
 
     /* Source data info */
     int source_bitdepth = 14; /* Will be figured out later */
@@ -42,13 +45,22 @@ int main(int argc, char ** argv)
             print_help();
             exit(0);
         } else if (!strcmp(argv[i], "-b")) {
-            puts("set bitdepth");
-            // bitdepth = argv[i+1];
+            output_bitdepth = atoi(argv[i+1]);
+            printf("Bitdepth set to %i\n", output_bitdepth);
             ++i;
         } else if (!strcmp(argv[i], "-o")) {
-            puts("set output name");
             output_name = argv[i+1];
+            printf("Output name set to: %s\n", output_name);
             ++i;
+        } else if (!strcmp(argv[i], "-c")) {
+            output_compression = atoi(argv[i+1]);
+            printf("Compression set to: %s\n", output_name);
+            ++i;
+        } else if (!strcmp(argv[i], "-f")) {
+            output_fps_top = atoi(argv[i+1]);
+            output_fps_bottom = atoi(argv[i+2]);
+            printf("FPS set to %.3f\n",(float)output_fps_top/output_fps_bottom);
+            i += 2;
         } else {
             input_files[num_input_files++] = argv[i];
         }
@@ -56,16 +68,18 @@ int main(int argc, char ** argv)
 
     /****************************** MLV creation ******************************/
 
+    /* Allocate memory for the mlv writer object */
     MLVWriter_t * writer = alloca(sizeof_MLVWriter());
+
     FILE * mlv_file = fopen(output_name, "wb");
     uint8_t * packed_frame_data = NULL;
 
     /* Write each frame */
     for (int i = 0; i < num_input_files; ++i)
     {
-        /* Get raw files */
+        /* Open raw file with libraw */
         libraw_data_t * Raw = libraw_init(0);
-        puts(input_files[i]);
+        printf("Opening file %s\n", input_files[i]);
         if (libraw_open_file(Raw, input_files[i])) puts("failed to open file");
         if (libraw_unpack(Raw)) puts("failed to unpack");
 
@@ -89,7 +103,9 @@ int main(int argc, char ** argv)
                             output_bitdepth, /* Bitdepth */
                             output_compression, /* Compressed LJ92? */
                             Raw->rawdata.color.black, /* Black levbel */
-                            Raw->rawdata.color.maximum /* or data_maximum? */ );
+                            Raw->rawdata.color.maximum, /* or data_maximum? */
+                            output_fps_top, /* FPS fraction */
+                            output_fps_bottom );
 
             /*********************** Set camera info... ***********************/
 
@@ -129,6 +145,12 @@ int main(int argc, char ** argv)
                 printf("File %s has different resolution!\n", input_files[i]);
             }
         }
+
+        /* No compression support just yet */
+        size_t frame_size = (width * height * output_bitdepth) / 8;
+
+        /* Write the frame */
+        size_t frame_header_size = MLVWriterGetFrameHeaderSize(writer, frame_size);
 
         libraw_recycle(Raw);
         libraw_close(Raw);
