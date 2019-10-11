@@ -21,41 +21,6 @@ void print_help()
     puts("Example:");
     puts(" ./write_mlv pic1.raw pic2.raw pic3.raw -o myvid.mlv -b 12 -c 1");
 }
-/* Very uzeful diagonal flip feature */
-static uint8_t diagonal_flip[9] = { 0, 3, 6, 1, 4, 7, 2, 5, 8 };
-/* Makes it like a function */
-#define diag_flip(X) diagonal_flip[(X)]
-
-void invertMatrix(double * inputMatrix, double * outputMatrix)
-{
-    for (int y = 0; y < 3; ++y)
-    {
-        for (int x = 0; x < 3; ++x)
-        {
-            /* Determenant locations for 2 x 2 */
-            int dX[2] = { (x + 1) % 3, (x + 2) % 3 };
-            int dY[2] = { 3 * ((y + 1) % 3), 3 * ((y + 2) % 3) };
-
-            outputMatrix[ diag_flip(y*3 + x) ] = 
-            (   /* Determinant caluclation 2 x 2 */
-                  inputMatrix[dY[0] + dX[0]] 
-                * inputMatrix[dY[1] + dX[1]]
-                - inputMatrix[dY[0] + dX[1]] 
-                * inputMatrix[dY[1] + dX[0]]
-            );
-        }
-    }
-
-    /* Calculate whole matrix determinant */
-    double determinant = 1.0 / (
-          inputMatrix[0] * ( inputMatrix[8] * inputMatrix[4] - inputMatrix[7] * inputMatrix[5] )
-        - inputMatrix[3] * ( inputMatrix[8] * inputMatrix[1] - inputMatrix[7] * inputMatrix[2] )
-        + inputMatrix[6] * ( inputMatrix[5] * inputMatrix[1] - inputMatrix[4] * inputMatrix[2] )
-    );
-
-    /* Multiply all elements by the determinant */
-    for (int i = 0; i < 9; ++i) outputMatrix[i] *= determinant;
-}
 
 int main(int argc, char ** argv)
 {
