@@ -30,8 +30,7 @@
 
 /* make sure the structures are packed e.g. using #pragma pack */
 
-
-/* Copied from mlv.h (GPL) - check if this is 0-K */
+/* Copied from mlv.h (GPL) - TODO: check if this is ok */
 #define MLV_VERSION_STRING "v2.0"
 #define MLV_VIDEO_CLASS_RAW          0x01
 #define MLV_VIDEO_CLASS_YUV          0x02

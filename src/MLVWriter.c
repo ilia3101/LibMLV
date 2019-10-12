@@ -2,7 +2,44 @@
 #include <stdint.h>
 #include <string.h>
 
+#include "mlv_structs.h"
+
+#define MLVWriter_header_block(BlockType, BlockName) \
+struct \
+{ \
+    union { \
+        BlockType block; \
+        mlv_hdr_t header; \
+    }; \
+    int write; /* Should this block be written? */ \
+} BlockName;
+
+typedef struct
+{
+    /* Header blocks */
+    MLVWriter_header_block(mlv_file_hdr_t, MLVI)
+    MLVWriter_header_block(mlv_rawi_hdr_t, RAWI)
+    MLVWriter_header_block(mlv_wavi_hdr_t, WAVI)
+    MLVWriter_header_block(mlv_expo_hdr_t, EXPO)
+    MLVWriter_header_block(mlv_lens_hdr_t, LENS)
+    MLVWriter_header_block(mlv_rtci_hdr_t, RTCI)
+    MLVWriter_header_block(mlv_idnt_hdr_t, IDNT)
+    MLVWriter_header_block(mlv_info_hdr_t, INFO)
+    MLVWriter_header_block(mlv_diso_hdr_t, DISO)
+    MLVWriter_header_block(mlv_mark_hdr_t, MARK)
+    MLVWriter_header_block(mlv_styl_hdr_t, STYL)
+    MLVWriter_header_block(mlv_elvl_hdr_t, ELVL)
+    MLVWriter_header_block(mlv_wbal_hdr_t, WBAL)
+
+    /* Frame blocks */
+    mlv_vidf_hdr_t VIDF;
+    mlv_audf_hdr_t AUDF;
+
+} MLVWriter_t;
+
+#define MLVWriter_src
 #include "../include/MLVWriter.h"
+#undef MLVWriter_src
 
 /* Sets string and block size */
 #define mlv_init_block(Block, String) \
