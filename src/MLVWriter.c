@@ -2,7 +2,7 @@
 #include <stdint.h>
 #include <string.h>
 
-#include "../Include/MLVWriter.h"
+#include "../include/MLVWriter.h"
 
 /* Sets string and block size */
 #define mlv_init_block(Block, String) \

@@ -1,7 +1,7 @@
 #include <stdlib.h>
 #include <stdint.h>
 
-#include "../Include/FrameUtils.h"
+#include "../include/FrameUtils.h"
 
 /* Not very nice. Packing function for bitdepths 9-15 */
 void mlv_pack_frame(uint16_t * Data, size_t Elements, void * Out, int Bitdepth)
