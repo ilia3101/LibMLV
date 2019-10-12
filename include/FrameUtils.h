@@ -4,7 +4,7 @@
 #include <stdint.h>
 
 /* Packing fucntions for 14, 12 and 10 bit, output memory size should be
- * bitdepth/16 the original size */
+ * bitdepth/16 the original size. TODO: check if works */
 void MLVPackFrame14(uint16_t * Data, size_t Elements, void * Out);
 void MLVPackFrame12(uint16_t * Data, size_t Elements, void * Out);
 void MLVPackFrame10(uint16_t * Data, size_t Elements, void * Out);
