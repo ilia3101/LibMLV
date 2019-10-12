@@ -97,61 +97,6 @@ void uninit_MLVWriter(MLVWriter_t * Writer)
     return;
 }
 
-void MLVWriterSetCameraPreset(MLVWriter_t * Writer, enum MLVCamPreset Camera)
-{
-    switch (Camera)
-    {
-        case Canon_5D_Mark_II:
-            MLVWriterSetCameraInfo( Writer, "Canon EOS 5D Mark II", 0x80000218,
-                                    NULL );
-            break;
-        case Canon_5D_Mark_III:
-            MLVWriterSetCameraInfo( Writer, "Canon EOS 5D Mark III", 0x80000285,
-                                    NULL );
-            break;
-        case Canon_6D:
-            MLVWriterSetCameraInfo( Writer, "Canon EOS 6D", 0x80000302,
-                                    NULL );
-            break;
-        case Canon_7D:
-            MLVWriterSetCameraInfo( Writer, "Canon EOS 7D", 0x80000250,
-                                    NULL );
-            break;
-        case Canon_50D:
-            MLVWriterSetCameraInfo( Writer, "Canon EOS 50D", 0x80000261,
-                                    NULL );
-            break;
-        case Canon_60D:
-            MLVWriterSetCameraInfo( Writer, "Canon EOS 60D", 0x80000287,
-                                    NULL );
-            break;
-        case Canon_500D:
-            MLVWriterSetCameraInfo( Writer, "Canon EOS 500D", 0x80000252,
-                                    NULL );
-            break;
-        case Canon_550D:
-            MLVWriterSetCameraInfo( Writer, "Canon EOS 550D", 0x80000270,
-                                    NULL );
-            break;
-        case Canon_600D:
-            MLVWriterSetCameraInfo( Writer, "Canon EOS 600D", 0x80000286,
-                                    NULL );
-            break;
-        case Canon_650D:
-            MLVWriterSetCameraInfo( Writer, "Canon EOS 650D", 0x80000301,
-                                    NULL );
-            break;
-        case Canon_700D:
-            MLVWriterSetCameraInfo( Writer, "Canon EOS 700D", 0x80000326,
-                                    NULL );
-            break;
-        case Canon_EOSM:
-            MLVWriterSetCameraInfo( Writer, "Canon EOS M", 0x80000331,
-                                    NULL );
-            break;
-    }
-}
-
 void MLVWriterSetCameraInfo( MLVWriter_t * Writer,
                              char * CameraName,
                              uint32_t CameraModelID,
