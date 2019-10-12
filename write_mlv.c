@@ -4,7 +4,7 @@
 #include <stdlib.h>
 #include <math.h>
 
-#include "include/MLVWriter.h"
+#include "include/libmlv.h"
 
 #include "librawheaders/libraw.h"
 
