@@ -8,6 +8,9 @@ typedef struct {
     libraw_data_t * libraw;
     double matrix[9];
     char cam_name[32];
+
+    int width;
+    int height;
 } RawReader_t;
 
 int init_RawReader(RawReader_t * Raw, char * File)
@@ -15,6 +18,10 @@ int init_RawReader(RawReader_t * Raw, char * File)
     memset(Raw, 0, sizeof(RawReader_t));
 
     libraw_data_t * libraw = libraw_init(0);
+
+    /* No flipping */
+    libraw->params.user_flip = 0;
+
     printf("Opening file %s\n", File);
     if (libraw_open_file(libraw, File) != 0) {
         puts("failed to open file");
@@ -34,6 +41,31 @@ int init_RawReader(RawReader_t * Raw, char * File)
 
     /* Get camera name */
     snprintf(Raw->cam_name, 32, "%s %s",libraw->idata.make,libraw->idata.model);
+
+    /* Get margins and width/height, canons for example have black area */
+    int crop_top = libraw->rawdata.sizes.top_margin;
+    int crop_left = libraw->rawdata.sizes.left_margin;
+    int width = libraw_get_iwidth(libraw);
+    /* Round width down to a multiple of 8 for MLV compatibility */
+    width = width - (width % 8);
+    int height = libraw_get_iheight(libraw);
+    int raw_width = libraw_get_raw_width(libraw);
+
+    /* HACK - memmove the image rows to remove the margins.
+     * Not a great solution, as we are modifying inside libraw's memory */
+
+    uint16_t * dst = libraw->rawdata.raw_image;
+    uint16_t * src = dst + crop_top*raw_width + crop_left;
+
+    for (int i = 0; i < height; ++i)
+    {
+        memmove(dst, src, width*sizeof(uint16_t));
+        dst += width;
+        src += raw_width;
+    }
+
+    Raw->width = width;
+    Raw->height = height;
 
     Raw->libraw = libraw;
     return 0;
@@ -62,12 +94,12 @@ int RawGetWhiteLevel(RawReader_t * Raw)
 
 int RawGetWidth(RawReader_t * Raw)
 {
-    return libraw_get_raw_width(Raw->libraw);
+    return Raw->width;
 }
 
 int RawGetHeight(RawReader_t * Raw)
 {
-    return libraw_get_raw_height(Raw->libraw);
+    return Raw->height;
 }
 
 double * RawGetMatrix(RawReader_t * Raw)

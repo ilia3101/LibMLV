@@ -9,7 +9,7 @@ gcc -c -O3 raw2mlv.c
 
 if [ ! -e libraw_r.a ]; then
 	if [[ "$OSTYPE" == "linux-gnu" ]]; then
-		echo "libraw_r.a is not present, add libraw_r.a to this folder"
+		echo "libraw_r.a is not present, add libraw_r.a to this folder (version 0.19.* please)"
 		echo "Compile instructions: https://www.libraw.org/docs/Install-LibRaw.html"
 		exit
 	elif [[ "$OSTYPE" == "darwin"* ]]; then
