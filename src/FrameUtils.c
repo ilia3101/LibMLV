@@ -51,7 +51,6 @@ void MLVPackFrame12(uint16_t * Data, size_t Elements, void * Out)
 
 void MLVPackFrame10(uint16_t * Data, size_t Elements, void * Out)
 {
-<<<<<<< HEAD
     uint16_t * output = Out;
     for (int i = 0; i < Elements; i += 8)
     {
@@ -72,9 +71,6 @@ void MLVPackFrame10(uint16_t * Data, size_t Elements, void * Out)
 
         output += 5;
     }
-=======
-    // mlv_pack_frame(Data, Elements, Out, 10);
->>>>>>> b7a22f73f3dcc2e0b3c4fade8fac6ba5d01f80c7
 }
 
 // void MLVCompressFrameLJ92( uint16_t * Data,
