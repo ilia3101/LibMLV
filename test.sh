@@ -1,5 +1,5 @@
-gcc -c -O3 src/FrameUtils.c
-gcc -c -O3 src/MLVWriter.c
+gcc -c -O3 LibMLV/FrameUtils.c
+gcc -c -O3 LibMLV/MLVWriter.c
 gcc -c -O3 write_mlv.c
 
 if [ ! -e libraw_r.a ]; then

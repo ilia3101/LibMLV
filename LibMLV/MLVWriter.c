@@ -62,7 +62,7 @@ typedef struct
 } MLVWriter_t;
 
 #define MLVWriter_src
-#include "../include/libmlv_MLVWriter.h"
+#include "MLVWriter.h"
 #undef MLVWriter_src
 
 /* Sets string and block size */

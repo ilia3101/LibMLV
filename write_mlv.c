@@ -94,6 +94,8 @@ int main(int argc, char ** argv)
             /* Round bitdepth up to a multiple of 2 */
             source_bitdepth = (int)ceil(log2(Raw->rawdata.color.maximum)/2) * 2;
 
+            printf("Detected source bitdepth: %i\n", source_bitdepth);
+
             /*************************** Set values ***************************/
 
             width = libraw_get_raw_width(Raw);

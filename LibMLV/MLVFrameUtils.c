@@ -25,7 +25,7 @@
 #include <stdlib.h>
 #include <stdint.h>
 
-#include "../include/libmlv_FrameUtils.h"
+#include "MLVFrameUtils.h"
 
 /* This probably only works on little endian */
 
