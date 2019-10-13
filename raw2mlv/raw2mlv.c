@@ -36,7 +36,7 @@
 
 #include "../LibMLV/LibMLV.h"
 
-#include "librawheaders/libraw.h"
+#include "LibRaw/libraw/libraw.h"
 
 void print_help()
 {
