@@ -261,7 +261,7 @@ void MLVWriterGetFrameHeaderData( MLVWriter_t * Writer,
 {
     Writer->VIDF.blockSize = sizeof(Writer->VIDF) + FrameSize;
     Writer->VIDF.frameNumber = FrameIndex;
-    Writer->VIDF.timestamp = FrameIndex*100;
+    Writer->VIDF.timestamp = 100+FrameIndex*100;
 
     memcpy(FrameHeaderData, &Writer->VIDF, sizeof(Writer->VIDF));
 }

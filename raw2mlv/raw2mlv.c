@@ -110,12 +110,12 @@ int main(int argc, char ** argv)
     uint8_t * packed_frame_data = NULL;
 
     /* Write each frame */
-    for (int i = 0; i < num_input_files; ++i)
+    for (int f = 0; f < num_input_files; ++f)
     {
         /* Open raw file with libraw */
         libraw_data_t * Raw = libraw_init(0);
-        printf("Opening file %s\n", input_files[i]);
-        if (libraw_open_file(Raw, input_files[i])) puts("failed to open file");
+        printf("Opening file %s\n", input_files[f]);
+        if (libraw_open_file(Raw, input_files[f])) puts("failed to open file");
         if (libraw_unpack(Raw)) puts("failed to unpack");
 
         /* This is the bayer data */
@@ -206,10 +206,10 @@ int main(int argc, char ** argv)
             uint8_t frame_header_data[frame_header_size];
 
             /* Get frame header */
-            MLVWriterGetFrameHeaderData(writer,i,frame_size,frame_header_data);
+            MLVWriterGetFrameHeaderData(writer,f,frame_size,frame_header_data);
 
             /* Write it */
-            fwrite(frame_header_data, frame_header_size, i, mlv_file);
+            fwrite(frame_header_data, frame_header_size, 1, mlv_file);
         }
 
         /* Now write actual frame data */
