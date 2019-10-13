@@ -27,7 +27,7 @@
 
 /*
  * The code in this file is public domain, but LibRaw is still LGPL.
- * This is a example of how to write an MLV with LibMLV.
+ * This is a example of how to write an MLV with LibMLV's MLVWriter.
  */
 
 #include <stdio.h>
@@ -37,8 +37,6 @@
 #include "../LibMLV/LibMLV.h"
 
 #include "librawheaders/libraw.h"
-
-/* This file is kind of a tutorial for using MLVWriter */
 
 void print_help()
 {
