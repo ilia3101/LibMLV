@@ -75,6 +75,10 @@ int main(int argc, char ** argv)
         } else if (!strcmp(argv[i], "-b")) {
             output_bitdepth = atoi(argv[i+1]);
             printf("Bitdepth set to %i\n", output_bitdepth);
+            if ((output_bitdepth % 2) != 0 || bitdepth < 10 || bitdepth > 16) {
+                puts("Unsupported bitdepth, choose 10/12/14/16.");
+                exit(1);
+            }
             ++i;
         } else if (!strcmp(argv[i], "-o")) {
             output_name = argv[i+1];
