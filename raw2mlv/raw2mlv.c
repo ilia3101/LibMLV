@@ -56,7 +56,7 @@ int main(int argc, char ** argv)
     /* Output parameters */
     char * output_name = "output.mlv";
     int num_input_files = 0;
-    char ** input_files = alloca(argc * sizeof(char *));
+    char ** input_files = malloc(argc * sizeof(char *));
     int output_bits = 14;
     int output_compression = 0;
     int width = 0;
@@ -103,7 +103,7 @@ int main(int argc, char ** argv)
     /****************************** MLV creation ******************************/
 
     /* Allocate memory for the mlv writer object */
-    MLVWriter_t * writer = alloca(sizeof_MLVWriter());
+    MLVWriter_t * writer = malloc(sizeof_MLVWriter());
 
     /* Open file and create pointer for packed frame data */
     FILE * mlv_file = fopen(output_name, "wb");
@@ -160,13 +160,15 @@ int main(int argc, char ** argv)
             size_t header_size = MLVWriterGetHeaderSize(writer);
 
             /* Allocate array for header data */
-            uint8_t header_data[header_size];
+            void * header_data = malloc(header_size);
 
             /* Get header data */
             MLVWriterGetHeaderData(writer, header_data);
 
             /* Write header data to the file */
             fwrite(header_data, header_size, 1, mlv_file);
+
+            free(header_data);
         }
         else
         {
@@ -217,6 +219,8 @@ int main(int argc, char ** argv)
     if (packed_frame_data != NULL) free(packed_frame_data);
     fclose(mlv_file);
     uninit_MLVWriter(writer);
+    free(writer);
+    free(input_files);
 
     return 0;
 }
