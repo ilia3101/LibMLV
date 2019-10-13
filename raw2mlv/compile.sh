@@ -1,6 +1,6 @@
-gcc -c -O3 LibMLV/MLVFrameUtils.c
-gcc -c -O3 LibMLV/MLVWriter.c
-gcc -c -O3 write_mlv.c
+gcc -c -O3 ../LibMLV/MLVFrameUtils.c
+gcc -c -O3 ../LibMLV/MLVWriter.c
+gcc -c -O3 raw2mlv.c
 
 if [ ! -e libraw_r.a ]; then
 	if [[ "$OSTYPE" == "linux-gnu" ]]; then
