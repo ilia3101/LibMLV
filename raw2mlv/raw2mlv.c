@@ -43,13 +43,13 @@ void print_help()
     puts(
 "Arguments:\n"
 " -h, --help                      Print help\n"
-" -o, --output <output filename>  Output file name\n"
+" -o <output filename>            Output file name\n"
 " -b, --bitdepth <bitdepth>       Output bitdepth, 8 to 16, even numbers\n"
-" --compression <0/1>              Output compression, 0=none, 1=LJ92\n"
+// " --compression <0/1>             Output compression, 0=none, 1=LJ92\n"
+" -f, --framerate <top> <bottom>  Framerate as a fraction, ex: -f 24000 1001\n"
 // " --crop <left>              Crop\n"
-" -f <top> <bottom>     Framerate as a fraction, ex: -f 24000 1001\n"
 "Example:\n"
-" ./write_mlv pic1.raw pic2.raw pic3.raw -o myvid.mlv -b 12 -c 1\n");
+" ./write_mlv pic1.raw pic2.raw pic3.raw -o myvid.mlv --bitdepth 12\n");
 }
 
 int main(int argc, char ** argv)
@@ -71,7 +71,7 @@ int main(int argc, char ** argv)
     /* Parse arguments */
     for (int i = 1; i < argc; ++i)
     {
-        if (!strcmp(argv[i], "-h") || !strcmp(argv[i], "-help")) {
+        if (!strcmp(argv[i], "-h") || !strcmp(argv[i], "--help")) {
             print_help();
             exit(0);
         } else if (!strcmp(argv[i], "-b")) {
@@ -86,12 +86,12 @@ int main(int argc, char ** argv)
             output_name = argv[i+1];
             printf("Output name set to %s\n", output_name);
             ++i;
-        } else if (!strcmp(argv[i], "-c")) {
+        } else if (!strcmp(argv[i], "--compression")) {
             output_compression = atoi(argv[i+1]);
             char * compression = (output_compression) ? "none" : "LJ92";
             printf("Compression set to %i (none)\n", output_compression);
             ++i;
-        } else if (!strcmp(argv[i], "-f")) {
+        } else if (!strcmp(argv[i], "-f") || !strcmp(argv[i], "--framerate")) {
             output_fps_top = atoi(argv[i+1]);
             output_fps_bottom = atoi(argv[i+2]);
             printf("FPS set to %.3f\n",(float)output_fps_top/output_fps_bottom);
