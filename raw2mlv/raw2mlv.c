@@ -36,7 +36,7 @@
 
 #include "../LibMLV/LibMLV.h"
 
-#include "LibRaw/libraw/libraw.h"
+#include "read_raw.c"
 
 void print_help()
 {
@@ -112,27 +112,23 @@ int main(int argc, char ** argv)
     /* Write each frame */
     for (int f = 0; f < num_input_files; ++f)
     {
-        /* Open raw file with libraw */
-        libraw_data_t * Raw = libraw_init(0);
-        printf("Opening file %s\n", input_files[f]);
-        if (libraw_open_file(Raw, input_files[f])) puts("failed to open file");
-        if (libraw_unpack(Raw)) puts("failed to unpack");
-
-        /* This is the bayer data */
-        uint16_t * bayerimage = Raw->rawdata.raw_image;
+        /* Open raw file with RawReader (wrapper for LibRaw) */
+        RawReader_t raw[1];
+        if (init_RawReader(raw, input_files[f]) != 0)
+            printf("Can't read file %s\n", input_files[f]);
 
         /* Initialise MLV writer and write MLV headers when it's first frame */
         if (f == 0)
         {
             /* Round bitdepth up to a multiple of 2 */
-            source_bitdepth = (int)ceil(log2(Raw->rawdata.color.maximum)/2) * 2;
+            source_bitdepth = (int)ceil(log2(RawGetWhiteLevel(raw))/2) * 2;
 
             printf("Detected source bitdepth: %i\n", source_bitdepth);
 
             /*************************** Set values ***************************/
 
-            width = libraw_get_raw_width(Raw);
-            height = libraw_get_raw_height(Raw);
+            width = RawGetWidth(raw);
+            height = RawGetHeight(raw);
 
             packed_frame_data = malloc((width * height * output_bits) / 8);
 
@@ -144,26 +140,17 @@ int main(int argc, char ** argv)
                             height, /* Height */
                             output_bits, /* Bitdepth */
                             output_compression, /* Compressed LJ92? */
-                            Raw->rawdata.color.black, /* Black levbel */
-                            Raw->rawdata.color.maximum, /* or data_maximum? */
+                            RawGetBlackLevel(raw), /* Black levbel */
+                            RawGetWhiteLevel(raw), /* or data_maximum? */
                             output_fps_top, /* FPS fraction */
                             output_fps_bottom );
 
             /*********************** Set camera info... ***********************/
 
-            char cam_name[32];
-            snprintf(cam_name, 32, "%s %s", Raw->idata.make, Raw->idata.model);
-
-            double matrix[9];
-            for (int y = 0; y < 3; ++y) {
-                for (int x = 0; x < 3; ++x) {
-                    printf("%3.5f, ", Raw->rawdata.color.cam_xyz[y][x]);
-                    matrix[y*3+x] = Raw->rawdata.color.cam_xyz[y][x];
-                }
-                printf("\n");
-            }
-
-            MLVWriterSetCameraInfo(writer, cam_name, 0, matrix);
+            MLVWriterSetCameraInfo( writer,
+                                    RawGetCamName(raw), /* Camera name string */
+                                    0, /* Model ID, only useful for ML cams */
+                                    RawGetMatrix(raw) /* Main camera matrix */);
 
             /************************** Write headers *************************/
 
@@ -172,22 +159,20 @@ int main(int argc, char ** argv)
              * must write it to a file ourself */
             size_t header_size = MLVWriterGetHeaderSize(writer);
 
-            {
-                /* Allocate array for header data */
-                uint8_t header_data[header_size];
+            /* Allocate array for header data */
+            uint8_t header_data[header_size];
 
-                /* Get header data */
-                MLVWriterGetHeaderData(writer, header_data);
+            /* Get header data */
+            MLVWriterGetHeaderData(writer, header_data);
 
-                /* Write header data to the file */
-                fwrite(header_data, header_size, 1, mlv_file);
-            }
+            /* Write header data to the file */
+            fwrite(header_data, header_size, 1, mlv_file);
         }
         else
         {
             /* Make sure everything is right */
-            if ( libraw_get_raw_width(Raw) != width
-             || libraw_get_raw_height(Raw) != height)
+            if ( RawGetWidth(raw) != width
+             || RawGetHeight(raw) != height)
             {
                 printf("File %s has different resolution!\n", input_files[f]);
             }
@@ -213,22 +198,20 @@ int main(int argc, char ** argv)
         }
 
         /* Now write actual frame data */
+        uint16_t * bayerimage = RawGetImageData(raw);
+
         if (output_bits == 16)
-            fwrite(bayerimage, frame_size, 1, mlv_file);
-        else 
-        {
-            if (output_bits == 14)
-                MLVPackFrame14(bayerimage, width*height, packed_frame_data);
-            else if (output_bits == 12)
-                MLVPackFrame12(bayerimage, width*height, packed_frame_data);
-            else if (output_bits == 10)
-                MLVPackFrame10(bayerimage, width*height, packed_frame_data);
+            packed_frame_data = (void *)bayerimage;
+        else if (output_bits == 14)
+            MLVPackFrame14(bayerimage, width*height, packed_frame_data);
+        else if (output_bits == 12)
+            MLVPackFrame12(bayerimage, width*height, packed_frame_data);
+        else if (output_bits == 10)
+            MLVPackFrame10(bayerimage, width*height, packed_frame_data);
 
-            fwrite(packed_frame_data, frame_size, 1, mlv_file);
-        }
+        fwrite(packed_frame_data, frame_size, 1, mlv_file);
 
-        libraw_recycle(Raw);
-        libraw_close(Raw);
+        uninit_RawReader(raw);
     }
 
     if (packed_frame_data != NULL) free(packed_frame_data);
