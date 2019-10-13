@@ -1,4 +1,4 @@
-gcc -c -O3 LibMLV/FrameUtils.c
+gcc -c -O3 LibMLV/MLVFrameUtils.c
 gcc -c -O3 LibMLV/MLVWriter.c
 gcc -c -O3 write_mlv.c
 
