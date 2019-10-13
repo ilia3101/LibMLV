@@ -87,14 +87,19 @@ int main(int argc, char ** argv)
 
         /* This is the bayer data */
         uint16_t * bayerimage = Raw->rawdata.raw_image;
-        width = libraw_get_raw_width(Raw);
-        height = libraw_get_raw_height(Raw);
 
         /* Initialise MLV writer and write MLV headers when it's first frame */
         if (i == 0)
         {
             /* Round bitdepth up to a multiple of 2 */
             source_bitdepth = (int)ceil(log2(Raw->rawdata.color.maximum)/2) * 2;
+
+            /*************************** Set values ***************************/
+
+            width = libraw_get_raw_width(Raw);
+            height = libraw_get_raw_height(Raw);
+
+            packed_frame_data = malloc((width * height * output_bitdepth) / 8);
 
             /********************* Initialise MLV writer **********************/
 
@@ -124,8 +129,6 @@ int main(int argc, char ** argv)
             }
 
             MLVWriterSetCameraInfo(writer, cam_name, 0, matrix);
-
-            // MLVWriterSetCameraPreset(writer, Canon_5D_Mark_III);
 
             /************************** Write headers *************************/
 
@@ -175,7 +178,20 @@ int main(int argc, char ** argv)
         }
 
         /* Now write actual frame data */
-        fwrite(bayerimage, frame_size, 1, mlv_file);
+        if (output_bitdepth == 16)
+            fwrite(bayerimage, frame_size, 1, mlv_file);
+        else 
+        {
+            if (output_bitdepth == 14)
+                MLVPackFrame14(bayerimage, width*height, packed_frame_data);
+            else if (output_bitdepth == 12)
+                MLVPackFrame12(bayerimage, width*height, packed_frame_data);
+            else if (output_bitdepth == 10)
+                MLVPackFrame10(bayerimage, width*height, packed_frame_data);
+
+            fwrite(packed_frame_data, frame_size, 1, mlv_file);
+        }
+        
 
         libraw_recycle(Raw);
         libraw_close(Raw);

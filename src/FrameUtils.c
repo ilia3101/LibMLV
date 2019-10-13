@@ -3,48 +3,33 @@
 
 #include "../include/libmlv_FrameUtils.h"
 
-/* Not very nice. Packing function for bitdepths 9-15 */
-void mlv_pack_frame(uint16_t * Data, size_t Elements, void * Out, int Bitdepth)
-{
-    uint8_t * output = (uint8_t *)Out;
-    uint64_t bitdepth = Bitdepth;
-    uint64_t bit_offset = 0;
-    for (size_t i = 0; i < Elements; ++i, bit_offset += bitdepth)
-    {
-        uint16_t value = Data[i];
-        uint64_t byte_offset_start = bit_offset / 8;
-        uint64_t byte_offset_end = (bit_offset+bitdepth) / 8;
-        uint64_t shift = bit_offset - (byte_offset_start * 8);
-
-        /* This means it spans 3 bytes */
-        if ((byte_offset_end-byte_offset_start) == 2)
-        {
-            output[byte_offset_start] |= value >> (bitdepth-shift);
-            output[byte_offset_start+1] = value >> (bitdepth-shift-8);
-            output[byte_offset_end] = value >> (bitdepth-shift-16);
-        }
-        /* Else 2 bytes */
-        else if ((byte_offset_end-byte_offset_start) == 1)
-        {
-            output[byte_offset_start] |= value >> (bitdepth-shift);
-            output[byte_offset_end] = value >> (bitdepth-shift-8);
-        }
-    }
-}
 
 void MLVPackFrame14(uint16_t * Data, size_t Elements, void * Out)
 {
-    mlv_pack_frame(Data, Elements, Out, 14);
+    // mlv_pack_frame(Data, Elements, Out, 14);
 }
 
 void MLVPackFrame12(uint16_t * Data, size_t Elements, void * Out)
 {
-    mlv_pack_frame(Data, Elements, Out, 12);
+    uint16_t * output = Out;
+    for (int i = 0; i < Elements; i += 4)
+    {
+        uint16_t pix_a = Data[ i ] & 0x0FFF;
+        uint16_t pix_b = Data[i+1] & 0x0FFF;
+        uint16_t pix_c = Data[i+2] & 0x0FFF;
+        uint16_t pix_d = Data[i+3] & 0x0FFF;
+
+        output[0] = (pix_a << 4) | (pix_b >> 8);
+        output[1] = (pix_b << 8) | (pix_c >> 4);
+        output[2] = (pix_c << 12) | (pix_d);
+
+        output += 3;
+    }
 }
 
 void MLVPackFrame10(uint16_t * Data, size_t Elements, void * Out)
 {
-    mlv_pack_frame(Data, Elements, Out, 10);
+    // mlv_pack_frame(Data, Elements, Out, 10);
 }
 
 // void MLVCompressFrameLJ92( uint16_t * Data,
