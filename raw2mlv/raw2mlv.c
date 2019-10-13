@@ -42,10 +42,11 @@ void print_help()
 {
     puts(
 "Arguments:\n"
-" -h                    Print help\n"
-" -o <output filename>  Output file name\n"
-" -b <bitdepth>         Output bitdepth, 8 to 16, even numbers\n"
-" -c <0/1>              Output compression, 0=none, 1=LJ92\n"
+" -h, --help                      Print help\n"
+" -o, --output <output filename>  Output file name\n"
+" -b, --bitdepth <bitdepth>       Output bitdepth, 8 to 16, even numbers\n"
+" --compression <0/1>              Output compression, 0=none, 1=LJ92\n"
+// " --crop <left>              Crop\n"
 " -f <top> <bottom>     Framerate as a fraction, ex: -f 24000 1001\n"
 "Example:\n"
 " ./write_mlv pic1.raw pic2.raw pic3.raw -o myvid.mlv -b 12 -c 1\n");
@@ -70,7 +71,7 @@ int main(int argc, char ** argv)
     /* Parse arguments */
     for (int i = 1; i < argc; ++i)
     {
-        if (!strcmp(argv[i], "-h")) {
+        if (!strcmp(argv[i], "-h") || !strcmp(argv[i], "-help")) {
             print_help();
             exit(0);
         } else if (!strcmp(argv[i], "-b")) {
@@ -188,16 +189,16 @@ int main(int argc, char ** argv)
         /* Get frame header size, telling MLVWriter how big the frame is */
         size_t frame_header_size = MLVWriterGetFrameHeaderSize(writer);
 
-        {
-            /* Create memory for frame header */
-            uint8_t frame_header_data[frame_header_size];
+        /* Create memory for frame header */
+        void * frame_header_data = malloc(frame_header_size);
 
-            /* Get frame header */
-            MLVWriterGetFrameHeaderData(writer,f,frame_size,frame_header_data);
+        /* Get frame header */
+        MLVWriterGetFrameHeaderData(writer,f,frame_size,frame_header_data);
 
-            /* Write it */
-            fwrite(frame_header_data, frame_header_size, 1, mlv_file);
-        }
+        /* Write it */
+        fwrite(frame_header_data, frame_header_size, 1, mlv_file);
+
+        free(frame_header_data);
 
         /* Now write actual frame data */
         uint16_t * bayerimage = RawGetImageData(raw);
