@@ -189,7 +189,7 @@ int main(int argc, char ** argv)
             if ( libraw_get_raw_width(Raw) != width
              || libraw_get_raw_height(Raw) != height)
             {
-                printf("File %s has different resolution!\n", input_files[i]);
+                printf("File %s has different resolution!\n", input_files[f]);
             }
         }
 
