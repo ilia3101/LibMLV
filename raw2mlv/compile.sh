@@ -33,5 +33,9 @@ else
 fi
 
 # must add -lstdc++ only for libraw
-gcc *.o libraw_r.a -o write_mlv -lstdc++
+if [[ "$OSTYPE" == "darwin"* ]]; then
+	gcc *.o libraw_r.a -o raw2mlv -lm -lstdc++ #macos version
+else
+	gcc *.o libraw_r.a -o raw2mlv -lm -lgomp -lstdc++ #linux version
+fi
 rm *.o
