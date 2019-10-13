@@ -71,6 +71,7 @@ int main(int argc, char ** argv)
 
     /* Source data info */
     int source_bitdepth = 14; /* Will be figured out later */
+    int shift_bits = 0; /* How many bits to shift to get to output bitdepth */
 
     /* Parse arguments */
     for (int i = 1; i < argc; ++i)
@@ -127,6 +128,9 @@ int main(int argc, char ** argv)
         {
             /* Round bitdepth up to a multiple of 2 */
             source_bitdepth = (int)ceil(log2(RawGetWhiteLevel(raw))/2) * 2;
+            shift_bits = source_bitdepth - output_bits;
+            if (shift_bits < 0) shift_bits = -shift_bits;
+            float lscale = pow(2.0, output_bits - source_bitdepth);
 
             printf("Detected source bitdepth: %i\n", source_bitdepth);
 
@@ -145,8 +149,8 @@ int main(int argc, char ** argv)
                             height, /* Height */
                             output_bits, /* Bitdepth */
                             output_compression, /* Compressed LJ92? */
-                            RawGetBlackLevel(raw), /* Black levbel */
-                            RawGetWhiteLevel(raw), /* or data_maximum? */
+                            RawGetBlackLevel(raw)*lscale, /* Black level */
+                            RawGetWhiteLevel(raw)*lscale, /* White level */
                             output_fps_top, /* FPS fraction */
                             output_fps_bottom );
 
@@ -216,7 +220,12 @@ int main(int argc, char ** argv)
         free(frame_header_data);
 
         /* Now write actual frame data */
-        uint16_t * bayerimage = RawGetImageData(raw);
+        uint16_t * bayerimage = RawGetImageData(raw);\
+
+        if (output_bits < source_bitdepth)
+            for (int i = 0; i < width*height; ++i) bayerimage[i] >>= shift_bits;
+        else
+            for (int i = 0; i < width*height; ++i) bayerimage[i] <<= shift_bits;
 
         if (output_bits == 16)
             packed_frame_data = (void *)bayerimage;
