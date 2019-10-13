@@ -56,7 +56,7 @@ int main(int argc, char ** argv)
     char * output_name = "output.mlv";
     int num_input_files = 0;
     char ** input_files = alloca(argc * sizeof(char *));
-    int output_bitdepth = 14;
+    int output_bits = 14;
     int output_compression = 0;
     int width = 0;
     int height = 0;
@@ -73,9 +73,9 @@ int main(int argc, char ** argv)
             print_help();
             exit(0);
         } else if (!strcmp(argv[i], "-b")) {
-            output_bitdepth = atoi(argv[i+1]);
-            printf("Bitdepth set to %i\n", output_bitdepth);
-            if ((output_bitdepth % 2) != 0 || bitdepth < 10 || bitdepth > 16) {
+            output_bits = atoi(argv[i+1]);
+            printf("Bitdepth set to %i\n", output_bits);
+            if ((output_bits % 2) != 0 || output_bits>16 || output_bits<10) {
                 puts("Unsupported bitdepth, choose 10/12/14/16.");
                 exit(1);
             }
@@ -133,7 +133,7 @@ int main(int argc, char ** argv)
             width = libraw_get_raw_width(Raw);
             height = libraw_get_raw_height(Raw);
 
-            packed_frame_data = malloc((width * height * output_bitdepth) / 8);
+            packed_frame_data = malloc((width * height * output_bits) / 8);
 
             /********************* Initialise MLV writer **********************/
 
@@ -141,7 +141,7 @@ int main(int argc, char ** argv)
             init_MLVWriter( writer,
                             width, /* Width */
                             height, /* Height */
-                            output_bitdepth, /* Bitdepth */
+                            output_bits, /* Bitdepth */
                             output_compression, /* Compressed LJ92? */
                             Raw->rawdata.color.black, /* Black levbel */
                             Raw->rawdata.color.maximum, /* or data_maximum? */
@@ -193,7 +193,7 @@ int main(int argc, char ** argv)
         }
 
         /* Calculate frame size, TODO: compressed frames will be different */
-        size_t frame_size = (width * height * output_bitdepth) / 8;
+        size_t frame_size = (width * height * output_bits) / 8;
 
         /*************************** Write the frame **************************/
 
@@ -212,15 +212,15 @@ int main(int argc, char ** argv)
         }
 
         /* Now write actual frame data */
-        if (output_bitdepth == 16)
+        if (output_bits == 16)
             fwrite(bayerimage, frame_size, 1, mlv_file);
         else 
         {
-            if (output_bitdepth == 14)
+            if (output_bits == 14)
                 MLVPackFrame14(bayerimage, width*height, packed_frame_data);
-            else if (output_bitdepth == 12)
+            else if (output_bits == 12)
                 MLVPackFrame12(bayerimage, width*height, packed_frame_data);
-            else if (output_bitdepth == 10)
+            else if (output_bits == 10)
                 MLVPackFrame10(bayerimage, width*height, packed_frame_data);
 
             fwrite(packed_frame_data, frame_size, 1, mlv_file);
