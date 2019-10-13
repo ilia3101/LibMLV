@@ -16,10 +16,10 @@ int init_RawReader(RawReader_t * Raw, char * File)
 
     libraw_data_t * libraw = libraw_init(0);
     printf("Opening file %s\n", File);
-    if (libraw_open_file(libraw, File)) {
+    if (libraw_open_file(libraw, File) != 0) {
         puts("failed to open file");
         return 1;
-    } if (libraw_unpack(libraw)) {
+    } if (libraw_unpack(libraw) != 0) {
         puts("failed to unpack");
         return 1;
     }
@@ -75,7 +75,7 @@ double * RawGetMatrix(RawReader_t * Raw)
     return Raw->matrix;
 }
 
-char * RawGetCameraName(RawReader_t * Raw)
+char * RawGetCamName(RawReader_t * Raw)
 {
     return Raw->cam_name;
 }

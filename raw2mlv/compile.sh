@@ -1,6 +1,6 @@
 # Git clone libraw so we have libraw headers
 if [ ! -d "LibRaw" ]; then
-	git clone https://github.com/LibRaw/LibRaw.git
+	git clone https://github.com/LibRaw/LibRaw.git -b 0.19-stable
 fi
 
 gcc -c -O3 ../LibMLV/MLVFrameUtils.c
