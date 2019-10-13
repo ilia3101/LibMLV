@@ -122,7 +122,7 @@ int main(int argc, char ** argv)
         uint16_t * bayerimage = Raw->rawdata.raw_image;
 
         /* Initialise MLV writer and write MLV headers when it's first frame */
-        if (i == 0)
+        if (f == 0)
         {
             /* Round bitdepth up to a multiple of 2 */
             source_bitdepth = (int)ceil(log2(Raw->rawdata.color.maximum)/2) * 2;
