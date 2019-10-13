@@ -145,7 +145,10 @@ void init_MLVWriter( MLVWriter_t * Writer,
 
     /* Framerate */
     Writer->MLVI.block.sourceFpsNom = FPSNumerator;
-    Writer->MLVI.block.sourceFpsDenom = FPSNumerator;
+    Writer->MLVI.block.sourceFpsDenom = FPSDenominator;
+
+    /* Number of frames */
+    Writer->MLVI.block.videoFrameCount = 2;
 
     /* Set MLVI and RAWI to be written */
     mlv_set_write_block(Writer->MLVI)
