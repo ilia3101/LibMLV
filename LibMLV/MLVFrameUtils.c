@@ -97,9 +97,12 @@ void MLVPackFrame10(uint16_t * Data, size_t Elements, void * Out)
     }
 }
 
-// void MLVCompressFrameLJ92( uint16_t * Data,
-//                            int Width,
-//                            int Height,
-//                            int Bitdepth,
-//                            void * Out,
-//                            size_t * ResultSize );
+void MLVCompressFrameLJ92( uint16_t * Data,
+                           int Width,
+                           int Height,
+                           int Bitdepth,
+                           void * Out,
+                           size_t * ResultSize )
+{
+    return;
+}
