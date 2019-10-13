@@ -36,18 +36,19 @@
 
 #include "../LibMLV/LibMLV.h"
 
-#include "LibRaw/libraw/libraw.h"
+#include "librawheaders/libraw.h"
 
 void print_help()
 {
-    puts("Arguments:");
-    puts(" -h                    Print help");
-    puts(" -o <output filename>  Output file name");
-    puts(" -b <bitdepth>         Output bitdepth, 8 to 16, even numbers");
-    puts(" -c <0/1>              Output compression, 0=none, 1=LJ92");
-    puts(" -f <top> <bottom>     Framerate as a fraction, ex: -f 24000 1001");
-    puts("Example:");
-    puts(" ./write_mlv pic1.raw pic2.raw pic3.raw -o myvid.mlv -b 12 -c 1");
+    puts(
+"Arguments:\n"
+" -h                    Print help\n"
+" -o <output filename>  Output file name\n"
+" -b <bitdepth>         Output bitdepth, 8 to 16, even numbers\n"
+" -c <0/1>              Output compression, 0=none, 1=LJ92\n"
+" -f <top> <bottom>     Framerate as a fraction, ex: -f 24000 1001\n"
+"Example:\n"
+" ./write_mlv pic1.raw pic2.raw pic3.raw -o myvid.mlv -b 12 -c 1\n");
 }
 
 int main(int argc, char ** argv)
@@ -185,8 +186,8 @@ int main(int argc, char ** argv)
         else
         {
             /* Make sure everything is right */
-            if ( libraw_get_iwidth(Raw) != width
-             || libraw_get_iheight(Raw) != height)
+            if ( libraw_get_raw_width(Raw) != width
+             || libraw_get_raw_height(Raw) != height)
             {
                 printf("File %s has different resolution!\n", input_files[i]);
             }
@@ -208,7 +209,7 @@ int main(int argc, char ** argv)
             MLVWriterGetFrameHeaderData(writer,i,frame_size,frame_header_data);
 
             /* Write it */
-            fwrite(frame_header_data, frame_header_size, 1, mlv_file);
+            fwrite(frame_header_data, frame_header_size, i, mlv_file);
         }
 
         /* Now write actual frame data */
@@ -225,7 +226,6 @@ int main(int argc, char ** argv)
 
             fwrite(packed_frame_data, frame_size, 1, mlv_file);
         }
-        
 
         libraw_recycle(Raw);
         libraw_close(Raw);
