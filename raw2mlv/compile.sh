@@ -3,9 +3,12 @@ if [ ! -d "LibRaw" ]; then
 	git clone https://github.com/LibRaw/LibRaw.git -b 0.19-stable
 fi
 
+rm *.o
+
 gcc -c -O3 ../LibMLV/MLVFrameUtils.c
 gcc -c -O3 ../LibMLV/MLVWriter.c
 gcc -c -O3 raw2mlv.c
+
 
 if [ ! -e libraw_r.a ]; then
 	if [[ "$OSTYPE" == "linux-gnu" ]]; then
@@ -39,7 +42,7 @@ fi
 
 # must add -lstdc++ only for libraw
 if [[ "$OSTYPE" == "darwin"* ]]; then
-	gcc *.o libraw_r.a -o raw2mlv -lm -lstdc++ #macos version
+	gcc libraw_r.a *.o -o raw2mlv -lm -lstdc++ #macos version
 else
 	gcc *.o libraw_r.a -o raw2mlv -lm -lgomp -lstdc++ #linux version
 fi

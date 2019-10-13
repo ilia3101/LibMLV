@@ -36,7 +36,11 @@
 
 #include "../LibMLV/LibMLV.h"
 
+/* LibRaw wrapper */
 #include "read_raw.c"
+
+/* Camera matrix data */
+#include "camera_matrices.c"
 
 void print_help()
 {
@@ -148,10 +152,21 @@ int main(int argc, char ** argv)
 
             /*********************** Set camera info... ***********************/
 
+            CameraMatrixInfo_t * mat = FindCameraMatrixInfo("Canon EOS 5D Mark III");
+            double * camera_matrix = NULL;
+
+            puts(RawGetCamName(raw));
+
+            /* Try to look up good matrix, otherwise use libraw one */
+            if (mat != NULL)
+                camera_matrix = mat->ColorMatrix2;
+            else
+                camera_matrix = RawGetMatrix(raw);
+
             MLVWriterSetCameraInfo( writer,
                                     RawGetCamName(raw), /* Camera name string */
                                     0, /* Model ID, only useful for ML cams */
-                                    RawGetMatrix(raw) /* Main camera matrix */);
+                                    camera_matrix /* Daylight camera matrix */);
 
             /************************** Write headers *************************/
 
