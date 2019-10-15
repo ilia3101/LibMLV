@@ -21,9 +21,9 @@ if [ ! -e libraw_r.a ]; then
 		case $yn in
 			[Yy]* )
 				echo "Downloading libraw_r.a ..."
-				wget -O ./libraw.zip https://www.libraw.org/data/LibRaw-0.19.5-MacOSX.zip &> /dev/null
+				wget -O ./libraw.zip https://www.libraw.org/data/LibRaw-0.19.4-MacOSX.zip &> /dev/null
 				unzip libraw.zip &> /dev/null
-				librawfolder=LibRaw-0.19.5
+				librawfolder=LibRaw-0.19.4
 				cp ./$librawfolder/lib/libraw_r.a ./
 				rm libraw.zip &> /dev/null
 				rm -rf $librawfolder &> /dev/null
