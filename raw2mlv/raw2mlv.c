@@ -152,7 +152,8 @@ int main(int argc, char ** argv)
                             RawGetBlackLevel(raw)*lscale, /* Black level */
                             RawGetWhiteLevel(raw)*lscale, /* White level */
                             output_fps_top, /* FPS fraction */
-                            output_fps_bottom );
+                            output_fps_bottom,
+                            num_input_files );
 
             /*********************** Set camera info... ***********************/
 

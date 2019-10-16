@@ -44,7 +44,8 @@ void init_MLVWriter( MLVWriter_t * Writer,
                      int BlackLevel,
                      int WhiteLevel,
                      int FPSNumerator,
-                     int FPSDenominator );
+                     int FPSDenominator,
+                     int NumFrames );
 
 void uninit_MLVWriter(MLVWriter_t * Writer);
 

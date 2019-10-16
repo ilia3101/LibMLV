@@ -93,7 +93,8 @@ void init_MLVWriter( MLVWriter_t * Writer,
                      int BlackLevel,
                      int WhiteLevel,
                      int FPSNumerator,
-                     int FPSDenominator )
+                     int FPSDenominator,
+                     int NumFrames )
 {
     /* Zerro everything */
     for (int i = 0; i < sizeof(MLVWriter_t); ++i) ((uint8_t *)Writer)[i] = 0;
@@ -148,7 +149,7 @@ void init_MLVWriter( MLVWriter_t * Writer,
     Writer->MLVI.block.sourceFpsDenom = FPSDenominator;
 
     /* Number of frames */
-    Writer->MLVI.block.videoFrameCount = 2;
+    Writer->MLVI.block.videoFrameCount = NumFrames;
 
     /* Set MLVI and RAWI to be written */
     mlv_set_write_block(Writer->MLVI)
