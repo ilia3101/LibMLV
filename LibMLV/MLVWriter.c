@@ -93,8 +93,7 @@ void init_MLVWriter( MLVWriter_t * Writer,
                      int BlackLevel,
                      int WhiteLevel,
                      int FPSNumerator,
-                     int FPSDenominator,
-                     int NumFrames )
+                     int FPSDenominator )
 {
     /* Zerro everything */
     for (int i = 0; i < sizeof(MLVWriter_t); ++i) ((uint8_t *)Writer)[i] = 0;
@@ -148,9 +147,6 @@ void init_MLVWriter( MLVWriter_t * Writer,
     Writer->MLVI.block.sourceFpsNom = FPSNumerator;
     Writer->MLVI.block.sourceFpsDenom = FPSDenominator;
 
-    /* Number of frames */
-    Writer->MLVI.block.videoFrameCount = NumFrames;
-
     /* Set MLVI and RAWI to be written */
     mlv_set_write_block(Writer->MLVI)
     mlv_set_write_block(Writer->RAWI)
@@ -168,7 +164,7 @@ void MLVWriterSetCameraInfo( MLVWriter_t * Writer,
                              double * ColourMatrix )
 {
     if (CameraName != NULL)
-        strcpy((char *)&Writer->IDNT.block.cameraName, CameraName);
+        strncpy((char *)&Writer->IDNT.block.cameraName, CameraName, 32);
     Writer->IDNT.block.cameraModel = CameraModelID;
 
     int32_t * matrix = Writer->RAWI.block.raw_info.color_matrix1;
@@ -231,9 +227,14 @@ size_t MLVWriterGetHeaderSize(MLVWriter_t * Writer)
     } \
 }
 
-void MLVWriterGetHeaderData(MLVWriter_t * Writer, void * HeaderData)
+void MLVWriterGetHeaderData( MLVWriter_t * Writer,
+                             void * HeaderData,
+                             int NumFrames )
 {
     uint8_t * pointer = HeaderData;
+
+    /* Set number of frames in header */
+    Writer->MLVI.block.videoFrameCount = NumFrames;
 
     mlv_copy_header_block(Writer->MLVI, pointer)
     mlv_copy_header_block(Writer->RAWI, pointer)
@@ -257,12 +258,15 @@ size_t MLVWriterGetFrameHeaderSize(MLVWriter_t * Writer)
 
 void MLVWriterGetFrameHeaderData( MLVWriter_t * Writer,
                                   uint64_t FrameIndex,
-                                  size_t FrameSize,
+                                  size_t FrameDataSize,
                                   void * FrameHeaderData )
 {
-    Writer->VIDF.blockSize = sizeof(Writer->VIDF) + FrameSize;
+    Writer->VIDF.blockSize = sizeof(Writer->VIDF) + FrameDataSize;
     Writer->VIDF.frameNumber = FrameIndex;
-    Writer->VIDF.timestamp = 100+FrameIndex*100;
+
+    /* Timestamp in microseconds (1 second = 1,000,000 microseconds) */
+    uint64_t time = Writer->MLVI.block.sourceFpsDenom * FrameIndex * 1000000;
+    Writer->VIDF.timestamp = time / Writer->MLVI.block.sourceFpsNom;
 
     memcpy(FrameHeaderData, &Writer->VIDF, sizeof(Writer->VIDF));
 }

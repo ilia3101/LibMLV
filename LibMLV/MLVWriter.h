@@ -44,8 +44,7 @@ void init_MLVWriter( MLVWriter_t * Writer,
                      int BlackLevel,
                      int WhiteLevel,
                      int FPSNumerator,
-                     int FPSDenominator,
-                     int NumFrames );
+                     int FPSDenominator );
 
 void uninit_MLVWriter(MLVWriter_t * Writer);
 
@@ -61,14 +60,10 @@ void MLVWriterSetCameraInfo( MLVWriter_t * Writer,
 
 /********************************** Writing ***********************************/
 
-/* After setting all of the metadata you want to set and want to begin writing,
- * call this to find out size of header data needing to be written */
+/* After setting all of the metadata you need to set and want to begin writing,
+ * call this to find out size of header data needing to be written. Leave
+ * this much free at the start of the file, then begin writing frames */
 size_t MLVWriterGetHeaderSize(MLVWriter_t * Writer);
-
-/* After allocating enough memory based on what MLVWriterGetHeaderSize told you,
- * use this function to get all of that data output to HeaderData pointer. Then
- * you must write it to a file yourself */
-void MLVWriterGetHeaderData(MLVWriter_t * Writer, void * HeaderData);
 
 /* Size of frame header */
 size_t MLVWriterGetFrameHeaderSize(MLVWriter_t * Writer);
@@ -77,7 +72,13 @@ size_t MLVWriterGetFrameHeaderSize(MLVWriter_t * Writer);
  * this to a file, followed by the actual frame data */
 void MLVWriterGetFrameHeaderData( MLVWriter_t * Writer,
                                   uint64_t FrameIndex,
-                                  size_t FrameSize,
+                                  size_t FrameDataSize,
                                   void * FrameHeaderData );
+
+/* Gets mlv header data, size can be got with MLVWriterGetHeaderSize. Seek to
+ * the start of the file after writing all frames and write the header. */
+void MLVWriterGetHeaderData( MLVWriter_t * Writer,
+                             void * HeaderData,
+                             int NumFrames );
 
 #endif

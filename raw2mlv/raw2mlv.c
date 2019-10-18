@@ -27,7 +27,7 @@
 
 /*
  * The code in this file is public domain, but LibRaw is still LGPL.
- * This is a demo writing an MLV with LibMLV's MLVWriter.
+ * This is a demo of writing an MLV with LibMLV's MLVWriter.
  */
 
 #include <stdio.h>
@@ -72,6 +72,9 @@ int main(int argc, char ** argv)
     /* Source data info */
     int source_bitdepth = 14; /* Will be figured out later */
     int shift_bits = 0; /* How many bits to shift to get to output bitdepth */
+
+    /* Count how many frames have been written */
+    int written_frames = 0;
 
     /* Parse arguments */
     for (int i = 1; i < argc; ++i)
@@ -152,15 +155,12 @@ int main(int argc, char ** argv)
                             RawGetBlackLevel(raw)*lscale, /* Black level */
                             RawGetWhiteLevel(raw)*lscale, /* White level */
                             output_fps_top, /* FPS fraction */
-                            output_fps_bottom,
-                            num_input_files );
+                            output_fps_bottom );
 
             /*********************** Set camera info... ***********************/
 
-            CameraMatrixInfo_t * mat = FindCameraMatrixInfo("Canon EOS 5D Mark III");
+            CameraMatrixInfo_t * mat = FindCameraMatrixInfo(RawGetCamName(raw));
             double * camera_matrix = NULL;
-
-            puts(RawGetCamName(raw));
 
             /* Try to look up good matrix, otherwise use libraw one */
             if (mat != NULL)
@@ -173,23 +173,9 @@ int main(int argc, char ** argv)
                                     0, /* Model ID, only useful for ML cams */
                                     camera_matrix /* Daylight camera matrix */);
 
-            /************************** Write headers *************************/
+            /************** Leave blank space in file for headers *************/
 
-            /* After setting all the metadata we choose to set, MLVWriter tells
-             * us how much header data there is, gives it to us, and then we
-             * must write it to a file ourself */
-            size_t header_size = MLVWriterGetHeaderSize(writer);
-
-            /* Allocate array for header data */
-            void * header_data = malloc(header_size);
-
-            /* Get header data */
-            MLVWriterGetHeaderData(writer, header_data);
-
-            /* Write header data to the file */
-            fwrite(header_data, header_size, 1, mlv_file);
-
-            free(header_data);
+            fseek(mlv_file, MLVWriterGetHeaderSize(writer), SEEK_SET);
         }
         else
         {
@@ -221,7 +207,7 @@ int main(int argc, char ** argv)
         free(frame_header_data);
 
         /* Now write actual frame data */
-        uint16_t * bayerimage = RawGetImageData(raw);\
+        uint16_t * bayerimage = RawGetImageData(raw);
 
         if (output_bits < source_bitdepth)
             for (int i = 0; i < width*height; ++i) bayerimage[i] >>= shift_bits;
@@ -239,8 +225,30 @@ int main(int argc, char ** argv)
 
         fwrite(packed_frame_data, frame_size, 1, mlv_file);
 
+        written_frames++;
+
         uninit_RawReader(raw);
     }
+
+
+    /***************************** Write headers ******************************/
+
+    /* Now go back to the start of the file */
+    fseek(mlv_file, 0, SEEK_SET);
+
+    /* Allocate array for header data */
+    size_t header_size = MLVWriterGetHeaderSize(writer);
+    void * header_data = malloc(header_size);
+
+    /* Get header data */
+    MLVWriterGetHeaderData(writer, header_data, written_frames);
+
+    /* Write header data to the file */
+    fwrite(header_data, header_size, 1, mlv_file);
+
+    free(header_data);
+
+    /********************************** DONE **********************************/
 
     if (packed_frame_data != NULL) free(packed_frame_data);
     fclose(mlv_file);
