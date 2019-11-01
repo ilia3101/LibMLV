@@ -58,6 +58,10 @@ void MLVWriterSetCameraInfo( MLVWriter_t * Writer,
                              uint32_t CameraModelID,
                              double * ColourMatrix );
 
+/* Time and date */
+void MLVWriterSetTimeAndDate( MLVWriter_t * Writer,
+                               )
+
 /********************************** Writing ***********************************/
 
 /* After setting all of the metadata you need to set and want to begin writing,

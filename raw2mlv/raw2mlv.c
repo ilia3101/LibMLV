@@ -159,10 +159,11 @@ int main(int argc, char ** argv)
 
             /*********************** Set camera info... ***********************/
 
+            /* Try to look up adobe matrix */
             CameraMatrixInfo_t * mat = FindCameraMatrixInfo(RawGetCamName(raw));
             double * camera_matrix = NULL;
 
-            /* Try to look up good matrix, otherwise use libraw one */
+            /* If no matrix found from adobe, use libraw one (most likely the same) */
             if (mat != NULL)
                 camera_matrix = mat->ColorMatrix2;
             else

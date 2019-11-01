@@ -112,3 +112,8 @@ char * RawGetCamName(RawReader_t * Raw)
 {
     return Raw->cam_name;
 }
+
+void RawGetTime(RawReader_t * Raw, time_t * TimeOutput)
+{
+    memcpy(TimeOutput, &Raw->libraw->other.timestamp, sizeof(time_t));
+}

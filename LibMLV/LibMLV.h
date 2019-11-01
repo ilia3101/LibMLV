@@ -25,6 +25,7 @@
 #ifndef _libMLV_
 #define _libMLV_
 
+#include "MLVReader.h"
 #include "MLVWriter.h"
 #include "MLVFrameUtils.h"
 
