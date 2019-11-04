@@ -117,7 +117,7 @@ static uint64_t mlv_file_get_size(mlvfile_t * File)
 }
 /******************************************************************************/
 
-/* static void print_size(uint64_t Size)
+static void print_size(uint64_t Size)
 {
     if (Size < 1024)
         printf("%i Bytes\n", (int)Size);
@@ -127,7 +127,7 @@ static uint64_t mlv_file_get_size(mlvfile_t * File)
         printf("%.2f MiB\n", ((float)Size)/(1024.0f*1024.0f));
     else
         printf("%.2f GiB\n", ((float)Size)/((float)(1024*1024*1024)));
-} */
+}
 
 /* Will fill an MLVReader if given (should be big enough to fit all blocks) */
 static int parse_mlv_file( mlvfile_t * File,
@@ -169,10 +169,10 @@ static int parse_mlv_file( mlvfile_t * File,
         }
 
         /* Print block (unless its null) */
-        /* if (strncmp((char *)block_name, "NULL", 4)) {
+        if (strncmp((char *)block_name, "NULL", 4)) {
             printf("%llu Block '%.4s' ", time_stamp, (char *)block_name);
             print_size(block_size);
-        } */
+        }
 
         if (strncmp((char *)block_name, "VIDF", 4) == 0) ++num_video_frames;
         if (strncmp((char *)block_name, "AUDF", 4) == 0) ++num_audio_frames;
