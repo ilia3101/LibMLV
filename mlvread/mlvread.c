@@ -11,18 +11,6 @@
 
 #include "../LibMLV/MLVReader.h"
 
-void print_size(uint64_t Size)
-{
-    if (Size < 1024)
-        printf("%i Bytes\n", (int)Size);
-    else if (Size < 1024*1024)
-        printf("%.1f KiB\n", ((float)Size)/1024.0f);
-    else if (Size < 1024*1024*1024)
-        printf("%.2f MiB\n", ((float)Size)/(1024.0f*1024.0f));
-    else
-        printf("%.2f GiB\n", ((float)Size)/((float)(1024*1024*1024)));
-}
-
 void * file2mem(char * FilePath, uint64_t * SizeOutput)
 {
     FILE * file = fopen(FilePath, "r");
