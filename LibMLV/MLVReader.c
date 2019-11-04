@@ -71,6 +71,8 @@ typedef struct
     uint32_t num_audio_frames;
     uint32_t num_video_frames;
 
+    uint64_t empty_space; /* Makes MLVReader be 1024 bytes (nice) */
+
     /* Array of block info, but sorted in to order by categories, then by
      * timestamp. Misc blocks first, then EXPOs, then AUDFs, then VIDFs */
     MLVReader_block_info_t blocks[];
