@@ -59,8 +59,8 @@ void MLVWriterSetCameraInfo( MLVWriter_t * Writer,
                              double * ColourMatrix );
 
 /* Time and date */
-void MLVWriterSetTimeAndDate( MLVWriter_t * Writer,
-                               )
+//void MLVWriterSetTimeAndDate( MLVWriter_t * Writer,
+//                              )
 
 /********************************** Writing ***********************************/
 
