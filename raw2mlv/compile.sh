@@ -8,7 +8,7 @@ rm *.o
 # compile raw2mlv
 gcc -c -O3 raw2mlv.c
 
-#compile raw2mlv
+#compile libMLV
 cd ../LibMLV/build/unix
 make -j4
 cd -
