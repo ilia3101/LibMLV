@@ -15,7 +15,6 @@ raw2mlv_c:
 
 LibMLV:
 	$(MAKE) -C ../LibMLV/build/unix
-	cp ../LibMLV/build/unix/libMLV.a libMLV.a
 
 GetLibRAW:
 	./getlibraw.sh
