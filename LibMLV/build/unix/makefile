@@ -3,7 +3,7 @@ FLAGS=-c -fPIC -O3
 
 main: MLVWriter MLVReader MLVFrameUtils
 	ar rcs libMLV.a *.o
-	gcc -shared *.o -o libMLV.so
+	$(CC) -shared *.o -o libMLV.so
 
 MLVWriter:
 	$(CC) ../../MLVWriter.c $(FLAGS)
