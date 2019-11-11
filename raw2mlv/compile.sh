@@ -5,11 +5,16 @@ fi
 
 rm *.o
 
-gcc -c -O3 ../LibMLV/MLVFrameUtils.c
-gcc -c -O3 ../LibMLV/MLVWriter.c
+# compile raw2mlv
 gcc -c -O3 raw2mlv.c
 
+#compile raw2mlv
+cd ../LibMLV/build/unix
+make -j4
+cd -
+cp ../LibMLV/build/unix/libMLV.a libMLV.a
 
+#get libraw
 if [ ! -e libraw_r.a ]; then
 	if [[ "$OSTYPE" == "linux-gnu" ]]; then
 		echo "libraw_r.a is not present, add libraw_r.a to this folder (version 0.19.* please)"
@@ -40,10 +45,10 @@ else
 	echo "libraw_r.a exists"
 fi
 
-# must add -lstdc++ only for libraw
-if [[ "$OSTYPE" == "darwin"* ]]; then
-	gcc libraw_r.a *.o -o raw2mlv -lm -lstdc++ #macos version
+#link
+if [[ "$OSTYPE" == "darwin"* ]]; then # (must add -lstdc++ only because libraw)
+	gcc libraw_r.a libMLV.a *.o -o raw2mlv -lm -lstdc++ #macos version
 else
-	gcc *.o libraw_r.a -o raw2mlv -lm -lgomp -lstdc++ #linux version
+	gcc *.o libraw_r.a libMLV.a -o raw2mlv -lm -lgomp -lstdc++ #linux version
 fi
 rm *.o
