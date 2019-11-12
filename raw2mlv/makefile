@@ -1,6 +1,5 @@
 CC=gcc
 FLAGS=-c -O3
-LINKFLAGS=-lm -lstdc++
 
 ifeq ($(shell uname -s), Linux)
 main: raw2mlv_c GetLibRAW LibMLV
