@@ -53,7 +53,7 @@ void print_help()
 " -f, --framerate <top> <bottom>  Framerate as a fraction, ex: -f 24000 1001\n"
 // " --crop <left>              Crop\n"
 "Example:\n"
-" ./write_mlv pic1.raw pic2.raw pic3.raw -o myvid.mlv --bitdepth 12\n");
+" ./raw2mlv pic1.raw pic2.raw pic3.raw -o myvid.mlv --bitdepth 12\n");
 }
 
 int main(int argc, char ** argv)
