@@ -34,10 +34,6 @@
 #include <stdlib.h>
 #include <math.h>
 
-/* Thank You Microsoft, Very Cool! */
-#ifdef _WIN32
-#define WIN32
-#endif
 #include "../LibMLV/LibMLV.h"
 
 /* LibRaw wrapper */

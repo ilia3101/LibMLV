@@ -8,30 +8,38 @@
 typedef void MLVReader_t;
 #endif
 
+/*********************************** ERRORS ***********************************/
+
+/* Combined errors are these OR'd in positive number space */
+#define MLVReader_ERROR_FILE_IO                     -1
+#define MLVReader_ERROR_UNSUPPORTED_VIDEO_FORMAT    -2
+#define MLVReader_ERROR_UNSUPPORTED_AUDIO_FORMAT    -4
+#define MLVReader_ERROR_SKIPPED_FRAME               -8
+#define MLVReader_ERROR_CORRUPTED_FRAME             -16
+#define MLVReader_ERROR_NOT_ENOUGH_METADATA         -32
+
+/* Generates a description of the error, output string should be 512 bytes */
+void MLVReaderGetErrorString(MLVReader_t * MLVReader, int Error, char * Out);
+
 /******************************* Initialisation *******************************/
 
-/* Returns how much memory to allocate for an MLVReader, based on the files you
- * provide. Those files should be part of the same clip (.MLV .M00 .M01 etc) */
-size_t sizeof_MLVReaderFromFILEs( FILE ** Files,
+/* Initialise MLV reader functions, provide block of memory to Reader argument,
+ * If it returns a positive value smaller than what you allocated, you do not
+ * need to call it again, if it returns a larger valuer, you must reallocate
+ * the memory to be that much and call it again, keep repeating if necessary.
+ * Any negative return value is an error. */
+int64_t init_MLVReaderFromFILEs( MLVReader_t * Reader,
+                                 size_t ReaderSize, /* How many bytes Reader is */
+                                 FILE ** Files,
+                                 int NumFiles,
+                                 int MaxFrames );
+
+int64_t init_MLVReaderFromMemory( MLVReader_t * Reader,
+                                  size_t ReaderSize,
+                                  void ** Files,
+                                  uint64_t * FileSizes,
                                   int NumFiles,
                                   int MaxFrames );
-
-/* Read MLV files from memory (maybe useful for memory mapped files) */
-size_t sizeof_MLVReaderFromMemory( void ** Files,
-                                   uint64_t * FileSizes,
-                                   int NumFiles,
-                                   int MaxFrames );
-
-/* Initialise MLV reader from FILEs */
-void init_MLVReaderFromFiles( MLVReader_t * Reader,
-                              FILE ** Files,
-                              int NumFiles );
-
-/* Initialise MLV reader from memory */
-void init_MLVReaderFromMemory( MLVReader_t * Reader,
-                               void ** Files,
-                               uint64_t * FileSizes,
-                               int NumFiles );
 
 /* Uninitialise MLVReader */
 void uninit_MLVReader(MLVReader_t * Reader);
@@ -55,7 +63,7 @@ int MLVReaderGetISO(MLVReader_t * Reader, uint64_t FrameIndex);
 
 /******************************** Frame getters *******************************/
 
-size_t MLVReaderGetRequiredFrameDecodingMemory(MLVReader_t * MLVReader);
+size_t MLVReaderGetFrameDecodingMemorySize(MLVReader_t * MLVReader);
 
 /* Gets an undebayered frame from MLV file */
 void MLVReaderGetFrameFromFile( MLVReader_t * MLVReader,

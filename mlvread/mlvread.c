@@ -26,29 +26,50 @@ void * file2mem(char * FilePath, uint64_t * SizeOutput)
 
 int main(int argc, char ** argv)
 {
+    FILE * mlv_files[argc-1];
+    
     for (int f = 1; f < argc; ++f)
     {
-        FILE * mlv_file = fopen(argv[f], "r");
-
+        mlv_files[f-1] = fopen(argv[f], "r");
+        if (mlv_files[f-1] == NULL) printf("Failed to open file %s\n", argv[f]);
         puts(argv[f]);
-
-        size_t mlv_reader_size = sizeof_MLVReaderFromFILEs(&mlv_file, 1, 0);
-
-        fclose(mlv_file);
     }
+
+    size_t allocsize = 300000;
+    MLVReader_t * reader = alloca(allocsize);
+
+    size_t return_size = init_MLVReaderFromFILEs(reader, allocsize, mlv_files, argc-1, 0);
+
+    // size_t mlv_reader_size = sizeof_MLVReaderFromFILEs(mlv_files, argc-1, 0);
 
     for (int f = 1; f < argc; ++f)
     {
-        puts(argv[f]);
-
-        uint64_t mlvsize;
-
-        void * mem_mlv = file2mem(argv[f], &mlvsize);
-
-        sizeof_MLVReaderFromMemory(&mem_mlv, &mlvsize, 1, 0);
-
-        free(mem_mlv);
+        fclose(mlv_files[f-1]);
     }
+
+    // for (int f = 1; f < argc; ++f)
+    // {
+    //     FILE * mlv_file = fopen(argv[f], "r");
+
+    //     puts(argv[f]);
+
+    //     size_t mlv_reader_size = sizeof_MLVReaderFromFILEs(&mlv_file, 1, 0);
+
+    //     fclose(mlv_file);
+    // }
+
+    // for (int f = 1; f < argc; ++f)
+    // {
+    //     puts(argv[f]);
+
+    //     uint64_t mlvsize;
+
+    //     void * mem_mlv = file2mem(argv[f], &mlvsize);
+
+    //     sizeof_MLVReaderFromMemory(&mem_mlv, &mlvsize, 1, 0);
+
+    //     free(mem_mlv);
+    // }
 
     return 0;
 }
