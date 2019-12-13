@@ -35,10 +35,18 @@ int main(int argc, char ** argv)
         puts(argv[f]);
     }
 
-    size_t allocsize = 300000;
-    MLVReader_t * reader = alloca(allocsize);
+    size_t allocated_size = 22;
+    MLVReader_t * reader = malloc(allocated_size);
 
-    size_t return_size = init_MLVReaderFromFILEs(reader, allocsize, mlv_files, argc-1, 0);
+    size_t return_val = allocated_size;
+
+    do {
+        reader = realloc(reader, return_val);
+        allocated_size = return_val;
+        return_val = init_MLVReaderFromFILEs(reader, allocated_size, mlv_files, argc-1, 0);
+    } while (return_val != allocated_size);
+
+        // return_size = init_MLVReaderFromFILEs(reader, allocsize, mlv_files, argc-1, 0);
 
     // size_t mlv_reader_size = sizeof_MLVReaderFromFILEs(mlv_files, argc-1, 0);
 
