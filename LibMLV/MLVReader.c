@@ -209,11 +209,7 @@ static size_t init_mlv_reader( MLVReader_t * Reader, size_t ReaderSize,
     uint32_t max_blocks = (ReaderSize-sizeof(MLVReader_t)) / sizeof(MLVReader_block_info_t);
     MLVReader_block_info_t * block = Reader->blocks; /* Output to here */
 
-    printf("max blocks = %i, num_blocks = %i\n", max_blocks, Reader->num_blocks);
-
     /* File state */
-    // uint8_t file_index = 0;
-    // uint64_t file_pos = 0;
     uint64_t current_file_size = mlv_file_get_size(File);
 
     /* While max blocks is not filled */
@@ -304,12 +300,6 @@ static size_t init_mlv_reader( MLVReader_t * Reader, size_t ReaderSize,
         for (int f = 0; f < NumFiles; ++f) remain += mlv_file_get_size(File+Reader->file_index);
         mapped += Reader->file_pos;
         remain -= mapped;
-
-        for (int f = 0; f < Reader->file_index; ++f)
-        {
-            printf("file index = %i, NumFiles=%i\n", Reader->file_index, NumFiles);
-            printf("file_pos = %i, current_file_size=%i\n", Reader->file_pos, current_file_size);
-        }
 
         return ReaderSize + (remain/(mapped/(Reader->num_blocks-8))) * sizeof(MLVReader_block_info_t);
     }
