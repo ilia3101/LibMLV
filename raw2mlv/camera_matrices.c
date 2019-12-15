@@ -10084,6 +10084,19 @@ CameraMatrixInfo_t all_camera_matrices[] =
             -0.1375,  0.2393,  0.6490
         }
     },
+		    {
+        "SIGMA fp",
+        {
+			1.4303, -0.7337, -0.4984,
+			-0.333, 1.1711, -0.0604,
+			-0.076, 0.1661, 0.5962
+        },
+        {
+            0.8061, -0.1997, -0.1703,
+			-0.4961, 1.1648, 0.0631,
+			-0.1156, 0.1607, 0.3607
+        }
+    },
     {
         "Pentax *istDL",
         {
@@ -10101,14 +10114,104 @@ CameraMatrixInfo_t all_camera_matrices[] =
 
 #define NumCameras sizeof(all_camera_matrices)/sizeof(all_camera_matrices[0])
 
+/* Up to 16 words of 32 length */
+void split_camera_name_by_words(char * CamName, char (* output)[16][32])
+{
+    if (CamName == NULL || output == NULL) return;
+
+    int cam_name_length = strlen(CamName);
+    int num_words = 0;
+
+    char cam_name[100];
+    strncpy(cam_name, CamName, 99);
+    // puts(cam_name);
+
+    for (int i = 0; i < cam_name_length; ++i)
+    {
+        if (cam_name[i] == ' ' || cam_name[i] == '-') cam_name[i] = 0;
+    }
+
+    for (int i = 0; i < cam_name_length; ++i)
+    {
+        int word_length = strlen(cam_name+i);
+
+        strcpy((*output)[num_words], cam_name+i);
+        (*output)[num_words][word_length] = 0;
+        // printf("%s ", (*output)[num_words]);
+
+        i += word_length;
+
+        ++num_words;
+    }
+    // puts("");
+}
+
 CameraMatrixInfo_t * FindCameraMatrixInfo(char * CameraName)
 {
+    CameraMatrixInfo_t * camera_matrix = NULL;
+
+    /* Try to find it by exact name */
     for (int c = 0; c < NumCameras; ++c)
     {
         if (!strcmp(all_camera_matrices[c].CameraName, CameraName))
         {
-            return &all_camera_matrices[c];
+            camera_matrix = &all_camera_matrices[c];
         }
     }
-    return NULL;
+
+    /* If that has failed, see which one matches the most words */
+    if (camera_matrix == NULL)
+    {
+        int most_matches = 0;
+        int most_matches_index = -1;
+        char words_to_find[16][32];
+        for(int o=0;o<16;++o)words_to_find[o][0]=0;
+        split_camera_name_by_words(CameraName, &words_to_find);
+        for (int m = 0; m < NumCameras; ++m)
+        {
+            char words_in_name[16][32];
+            for(int o=0;o<16;++o)words_in_name[o][0]=0;
+
+            int matches = 0;
+            split_camera_name_by_words(all_camera_matrices[m].CameraName, &words_in_name);
+
+
+            /* Check each and every word */
+            for (int i = 0; i < 16; ++i)
+            {
+                for (int j = 0; j < 16; ++j)
+                {
+                    if (*(words_to_find[i]) != 0 && *(words_in_name[j]) != 0)
+                    if (!strcmp(words_to_find[i], words_in_name[j]))
+                    {
+                        // printf("matched %s, %s\n", words_to_find[i], words_in_name[j]);
+                        ++matches;
+                    }
+                }
+            }
+
+            /* Found a betetr match */
+            if (matches > most_matches)
+            {
+                most_matches = matches;
+                most_matches_index = m;
+            }
+        }
+
+        if (most_matches > 0 && most_matches_index != -1)
+        {
+            camera_matrix = &all_camera_matrices[most_matches_index];
+        }
+    }
+
+    if (camera_matrix != NULL)
+    {
+        printf("Found matrix \"%s\"\n", camera_matrix->CameraName);
+    }
+    else
+    {
+        puts("No matrix found");
+    }
+
+    return camera_matrix;
 }
