@@ -148,12 +148,12 @@ static inline uint64_t BlockValue(MLVReader_block_info_t * Block)
     if (Block->type == 0)
     {/* TODO: Fix 262 terrabyte limit for correct sorting */
         /* For misc blocks, sort by file index, then file position */
-        return ((((uint64_t)(Block->file_index)) << 48UL) || (Block->file_location && 0x0000FFFFFFFFFFFFUL));
+        return ((((uint64_t)(Block->file_index)) << 48UL) || (Block->file_location & 0x0000FFFFFFFFFFFFUL));
     }
     else
     {
         /* For Frames/Audio/Exposure, sort by type, then time stamp */
-        return ((((uint64_t)(Block->type)) << 56UL) || (Block->time_stamp && 0x0000FFFFFFFFFFFFUL));
+        return ((((uint64_t)(Block->type)) << 56UL) || (Block->time_stamp & 0x0000FFFFFFFFFFFFUL));
     }
 }
 
@@ -351,7 +351,12 @@ int64_t init_MLVReaderFromFILEs( MLVReader_t * Reader,
     if (NumFiles > 101) return MLVReader_ERROR_TOO_MANY_FILES;
     if (NumFiles <= 0) return MLVReader_ERROR_BAD_ARGUMENT;
     if (Reader == NULL) return MLVReader_ERROR_BAD_ARGUMENT;
-    if (Reader == NULL) return MLVReader_ERROR_BAD_ARGUMENT;
+    if (Files == NULL) return MLVReader_ERROR_BAD_ARGUMENT;
+    for (int f = 0; f < NumFiles; ++f)
+    {
+        /* 10TB seems like a reasonable file size limit */
+        if (Files[f] == NULL) return MLVReader_ERROR_BAD_ARGUMENT;
+    }
 
     mlvfile_t mlv_files[101];
 
@@ -387,8 +392,8 @@ int64_t init_MLVReaderFromMemory( MLVReader_t * Reader,
     for (int f = 0; f < NumFiles; ++f)
     {
         /* 10TB seems like a reasonable file size limit */
-        if (FileSizes[i] > (1024*1024*1024*10)) return MLVReader_ERROR_BAD_ARGUMENT;
-        if (Files[i] == NULL) return MLVReader_ERROR_BAD_ARGUMENT;
+        if (FileSizes[f] > (1024UL*1024*1024*10)) return MLVReader_ERROR_BAD_ARGUMENT;
+        if (Files[f] == NULL) return MLVReader_ERROR_BAD_ARGUMENT;
     }
 
     mlvfile_t mlv_files[101];
