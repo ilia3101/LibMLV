@@ -5,7 +5,7 @@
 
 #include "mlv_structs.h"
 
-#define MLVReader_string "MLVReader_0.0"
+#define MLVReader_string "MLVReader 0.1"
 
 #define MLVReader_header_block(BlockType, BlockName) \
 struct \
@@ -76,10 +76,11 @@ typedef struct
     /* Some info */
     uint32_t biggest_video_frame; /* Biggest video frame size */
 
-    /* Parsing info */
+    /* Only used while parsing */
     uint8_t finished_parsing; /* Multiple files only go up to 100 */
-    uint8_t file_index; /* Multiple files only go up to 100 */
-    uint64_t file_pos; /* Position in file */
+    uint8_t file_index; /* Current file (Multiple files only go up to 100) */
+    uint64_t file_pos; /* Position in current file */
+    uint64_t total_frame_data; /* How many bytes of frame data have been seen */
 
     /* Array of block info, but sorted in to order by categories, then by
      * timestamp. Misc blocks first, then EXPOs, then AUDFs, then VIDFs */
@@ -142,7 +143,19 @@ static void print_size(uint64_t Size)
 
 
 /* Value for quicksort (so it gets sorted in correct order) */
-#define BlockValue(Block) ((((uint64_t)(Block.type)) << 56UL) || (Block.time_stamp && 0x00FFFFFFFFFFFFFFUL))
+static inline uint64_t BlockValue(MLVReader_block_info_t * Block)
+{
+    if (Block->type == 0)
+    {/* TODO: Fix 262 terrabyte limit for correct sorting */
+        /* For misc blocks, sort by file index, then file position */
+        return ((((uint64_t)(Block->file_index)) << 48UL) || (Block->file_location && 0x0000FFFFFFFFFFFFUL));
+    }
+    else
+    {
+        /* For Frames/Audio/Exposure, sort by type, then time stamp */
+        return ((((uint64_t)(Block->type)) << 56UL) || (Block->time_stamp && 0x0000FFFFFFFFFFFFUL));
+    }
+}
 
 /* TODO: find better solution than copied recursive quicksort */
 static void quicksort(MLVReader_block_info_t * Blocks, int first, int last)
@@ -157,9 +170,9 @@ static void quicksort(MLVReader_block_info_t * Blocks, int first, int last)
       j=last;
 
       while(i<j){
-         while(BlockValue(Blocks[i]) <= BlockValue(Blocks[pivot]) && i<last)
+         while(BlockValue(&Blocks[i]) <= BlockValue(&Blocks[pivot]) && i<last)
             i++;
-         while(BlockValue(Blocks[j])>BlockValue(Blocks[pivot]))
+         while(BlockValue(&Blocks[j])>BlockValue(&Blocks[pivot]))
             j--;
          if(i<j){
             temp=Blocks[i];
@@ -198,17 +211,20 @@ static size_t init_mlv_reader( MLVReader_t * Reader, size_t ReaderSize,
         return sizeof(MLVReader_t) + sizeof(MLVReader_block_info_t) * 800;
     }
 
+    printf("line %i\n",__LINE__);
     /* If not initialised, zero memory and put string at start */
     if (strcmp(MLVReader_string, (char *)Reader))
     {
         memset(Reader, 0, sizeof(MLVReader_t));
         strcpy(Reader->string, MLVReader_string);
     }
+    printf("line %i\n",__LINE__);
 
     /* How many blocks can fit in the memory given */
     uint32_t max_blocks = (ReaderSize-sizeof(MLVReader_t)) / sizeof(MLVReader_block_info_t);
     MLVReader_block_info_t * block = Reader->blocks; /* Output to here */
 
+    printf("line %i\n",__LINE__);
     /* File state */
     uint64_t current_file_size = mlv_file_get_size(File);
 
@@ -255,6 +271,7 @@ static size_t init_mlv_reader( MLVReader_t * Reader, size_t ReaderSize,
                                    Reader->file_pos+offsetof(mlv_audf_hdr_t,frameSpace),
                                    sizeof(uint32_t), &block->frame.offset );
                 block->frame.size = block_size - (sizeof(mlv_audf_hdr_t) + block->frame.offset);
+                Reader->total_frame_data += block_size;
             }
             else if (strncmp((char *)block_name, "VIDF", 4) == 0)
             {
@@ -262,6 +279,7 @@ static size_t init_mlv_reader( MLVReader_t * Reader, size_t ReaderSize,
                                    Reader->file_pos+offsetof(mlv_vidf_hdr_t,frameSpace),
                                    sizeof(uint32_t), &block->frame.offset );
                 block->frame.size = block_size - (sizeof(mlv_vidf_hdr_t) + block->frame.offset);
+                Reader->total_frame_data += block_size;
             }
             else if (strncmp((char *)block_name, "EXPO", 4) == 0)
             {
@@ -294,14 +312,24 @@ static size_t init_mlv_reader( MLVReader_t * Reader, size_t ReaderSize,
     /* If not scanned through all files, we need more memory */
     if (!Reader->finished_parsing && (Reader->file_pos < current_file_size || Reader->file_index != (NumFiles-1)))
     {
-        /* Estimate memory required by extrapolating current byte per block rate */
-        uint64_t mapped = 0, remain = 0;
-        for (int f = 0; f < Reader->file_index; ++f) mapped += mlv_file_get_size(File+Reader->file_index);
-        for (int f = 0; f < NumFiles; ++f) remain += mlv_file_get_size(File+Reader->file_index);
-        mapped += Reader->file_pos;
-        remain -= mapped;
+        /* Estimate memory required for whole MLV to be read */
+        uint64_t total_file_size = 0;
+        for (int f = 0; f < NumFiles; ++f)
+            total_file_size += mlv_file_get_size(File+Reader->file_index);
 
-        return ReaderSize + (remain/(mapped/(Reader->num_blocks-8))) * sizeof(MLVReader_block_info_t);
+        uint64_t average_frame_size = 100;
+        if (Reader->total_frame_data != 0)
+        {
+            average_frame_size = Reader->total_frame_data / (Reader->num_audio_frames + Reader->num_video_frames);
+        }
+        else
+        {
+            /* Lets say it's an EOS M shooting 12 bit lossless (kinda the lowest common denominator) */
+            average_frame_size = ((1728 * 978 * 10) / 8) * 0.57;
+        }
+
+        /* Guessing 10 random blocks per file, a safe average */
+        return ReaderSize + (average_frame_size*total_file_size + 20 + 10*NumFiles) * sizeof(MLVReader_block_info_t);
     }
     else
     {
@@ -320,15 +348,22 @@ int64_t init_MLVReaderFromFILEs( MLVReader_t * Reader,
                                  int NumFiles,
                                  int MaxFrames )
 {
-    mlvfile_t mlv_files[NumFiles];
+    if (NumFiles > 101) return MLVReader_ERROR_TOO_MANY_FILES;
+    if (NumFiles <= 0) return MLVReader_ERROR_BAD_ARGUMENT;
+    if (Reader == NULL) return MLVReader_ERROR_BAD_ARGUMENT;
+    if (Reader == NULL) return MLVReader_ERROR_BAD_ARGUMENT;
+
+    mlvfile_t mlv_files[101];
 
     for (int f = 0; f < NumFiles; ++f) {
         init_mlv_file_from_FILE(mlv_files+f, Files[f]);
     }
+    puts("hi1");
 
-    size_t return_value = init_mlv_reader( Reader, ReaderSize,
-                                           mlv_files, NumFiles, MaxFrames );
+    int64_t return_value = init_mlv_reader( Reader, ReaderSize,
+                                            mlv_files, NumFiles, MaxFrames );
 
+    puts("hi2");
     for (int f = 0; f < NumFiles; ++f) {
         uninit_mlv_file(mlv_files+f);
     }
@@ -344,7 +379,19 @@ int64_t init_MLVReaderFromMemory( MLVReader_t * Reader,
                                   int NumFiles,
                                   int MaxFrames )
 {
-    mlvfile_t mlv_files[NumFiles];
+    if (NumFiles > 101) return MLVReader_ERROR_TOO_MANY_FILES;
+    if (NumFiles <= 0) return MLVReader_ERROR_BAD_ARGUMENT;
+    if (Reader == NULL) return MLVReader_ERROR_BAD_ARGUMENT;
+    if (Files == NULL) return MLVReader_ERROR_BAD_ARGUMENT;
+    if (FileSizes == NULL) return MLVReader_ERROR_BAD_ARGUMENT;
+    for (int f = 0; f < NumFiles; ++f)
+    {
+        /* 10TB seems like a reasonable file size limit */
+        if (FileSizes[i] > (1024*1024*1024*10)) return MLVReader_ERROR_BAD_ARGUMENT;
+        if (Files[i] == NULL) return MLVReader_ERROR_BAD_ARGUMENT;
+    }
+
+    mlvfile_t mlv_files[101];
 
     for (int f = 0; f < NumFiles; ++f) {
         init_mlv_file_from_mem(mlv_files+f, Files[f], FileSizes[f]);

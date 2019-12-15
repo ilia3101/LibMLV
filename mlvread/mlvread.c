@@ -44,6 +44,7 @@ int main(int argc, char ** argv)
         reader = realloc(reader, return_val);
         allocated_size = return_val;
         return_val = init_MLVReaderFromFILEs(reader, allocated_size, mlv_files, argc-1, 0);
+        printf("Allocated = %i, requested = %i\n", allocated_size, return_val);
     } while (return_val != allocated_size);
 
         // return_size = init_MLVReaderFromFILEs(reader, allocsize, mlv_files, argc-1, 0);
