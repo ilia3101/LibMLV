@@ -5,7 +5,7 @@ LibrawError=Please put libraw.dll, libraw.lib and libraw source in this folder, 
 main: raw2mlv_c GetLibRAW LibMLV
 	$(CC) /Fe:raw2mlv raw2mlv.obj libraw.lib ../LibMLV/build/MSVC/libMLV.lib /link setargv.obj
 
-raw2mlv_c:
+raw2mlv_c: camera_matrices.c read_raw.c
 	$(CC) $(FLAGS) raw2mlv.c
 
 LibMLV:

@@ -26,7 +26,7 @@
 #include <stdint.h>
 #include <string.h>
 
-#include "mlv_structs.h"
+#include "../include/mlv_structs.h"
 
 #define MLVWriter_header_block(BlockType, BlockName) \
 struct \
@@ -62,7 +62,7 @@ typedef struct
 } MLVWriter_t;
 
 #define MLVWriter_src
-#include "MLVWriter.h"
+#include "../include/MLVWriter.h"
 #undef MLVWriter_src
 
 /* Sets string and block size */

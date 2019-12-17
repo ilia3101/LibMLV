@@ -20,7 +20,7 @@ typedef void MLVReader_t;
 #define MLVReader_ERROR_NOT_ENOUGH_METADATA         0x0040
 #define MLVReader_ERROR_TOO_MANY_FILES              0x0080
 #define MLVReader_ERROR_FILE_TOO_BIG                0x0100
-#define MLVReader_ERROR_BAD_ARGUMENT                0x0200 /* You have provided shit input */
+#define MLVReader_ERROR_BAD_INPUT                   0x0200 /* You have provided shit input */
 #define MLVReader_ERROR_NULL_POINTER                0x0400 /* You are dumb */
 
 /* Generates a description of the error, output string should be 512 bytes */
@@ -53,9 +53,10 @@ void uninit_MLVReader(MLVReader_t * Reader);
 
 /* Counts how many blocks of type BlockType there are */
 int32_t MLVReaderGetNumBlocks(MLVReader_t * Reader, char * BlockType);
-/* Get actual block data for block of BlockType, BlockIndex = 0 to get first
- * instance of that block, 1 to get second, etc. Bytes argument is maximum bytes
- * to get of that block, outputs to Out. */
+
+/* Get block data for block of BlockType, BlockIndex = 0 to get first
+ * instance of that block, 1 to get second, etc. Bytes argument is maximum
+ * number of bytes to get. Outputs to Out. */
 int64_t MLVReaderGetBlockDataFromFiles( MLVReader_t * Reader, FILE ** Files,
                                         char * BlockType, int BlockIndex,
                                         size_t Bytes, void * Out );
@@ -82,7 +83,6 @@ char * MLVReaderGetLensName(MLVReader_t * Reader);
 int MLVReaderGetLensFocalLength(MLVReader_t * Reader);
 
 int MLVReaderGetISO(MLVReader_t * Reader, uint64_t FrameIndex);
-// int MLVReaderGetISO(MLVReader_t * Reader, uint64_t FrameIndex);
 
 /******************************** Frame getters *******************************/
 

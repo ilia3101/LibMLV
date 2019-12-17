@@ -34,7 +34,7 @@
 #include <stdlib.h>
 #include <math.h>
 
-#include "../LibMLV/LibMLV.h"
+#include "../include/LibMLV.h"
 
 /* LibRaw wrapper */
 #include "read_raw.c"
@@ -164,10 +164,10 @@ int main(int argc, char ** argv)
             double * camera_matrix = NULL;
 
             /* If no matrix found from adobe, use libraw one (most likely the same) */
-            if (mat != NULL)
-                camera_matrix = mat->ColorMatrix2;
-            else
-                camera_matrix = RawGetMatrix(raw);
+            if (mat != NULL){puts("marix");
+                camera_matrix = mat->ColorMatrix2;}
+            else{puts("no marix");
+                camera_matrix = RawGetMatrix(raw);}
 
             MLVWriterSetCameraInfo( writer,
                                     RawGetCamName(raw), /* Camera name string */

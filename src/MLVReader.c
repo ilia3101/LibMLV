@@ -1,9 +1,33 @@
+/* 
+ * MIT License
+ *
+ * Copyright (C) 2019 Ilia Sibiryakov
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
+ * 
+ * The above copyright notice and this permission notice shall be included in
+ * all copies or substantial portions of the Software.
+ * 
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+ * SOFTWARE.
+ */
+
 #include <stdio.h>
 #include <stdint.h>
 #include <string.h>
 #include <stddef.h>
 
-#include "mlv_structs.h"
+#include "../include/mlv_structs.h"
 
 #define MLVReader_string "MLVReader 0.1"
 
@@ -89,7 +113,7 @@ typedef struct
 } MLVReader_t;
 
 #define MLVReader_src
-#include "MLVReader.h"
+#include "../include/MLVReader.h"
 #undef MLVReader_src
 
 /***** Wrapper for memory or a FILE, so they can be treated the same way ******/
@@ -211,20 +235,17 @@ static size_t init_mlv_reader( MLVReader_t * Reader, size_t ReaderSize,
         return sizeof(MLVReader_t) + sizeof(MLVReader_block_info_t) * 800;
     }
 
-    printf("line %i\n",__LINE__);
     /* If not initialised, zero memory and put string at start */
     if (strcmp(MLVReader_string, (char *)Reader))
     {
         memset(Reader, 0, sizeof(MLVReader_t));
         strcpy(Reader->string, MLVReader_string);
     }
-    printf("line %i\n",__LINE__);
 
     /* How many blocks can fit in the memory given */
     uint32_t max_blocks = (ReaderSize-sizeof(MLVReader_t)) / sizeof(MLVReader_block_info_t);
     MLVReader_block_info_t * block = Reader->blocks; /* Output to here */
 
-    printf("line %i\n",__LINE__);
     /* File state */
     uint64_t current_file_size = mlv_file_get_size(File);
 
@@ -349,13 +370,13 @@ int64_t init_MLVReaderFromFILEs( MLVReader_t * Reader,
                                  int MaxFrames )
 {
     if (NumFiles > 101) return MLVReader_ERROR_TOO_MANY_FILES;
-    if (NumFiles <= 0) return MLVReader_ERROR_BAD_ARGUMENT;
-    if (Reader == NULL) return MLVReader_ERROR_BAD_ARGUMENT;
-    if (Files == NULL) return MLVReader_ERROR_BAD_ARGUMENT;
+    if (NumFiles <= 0) return MLVReader_ERROR_BAD_INPUT;
+    if (Reader == NULL) return MLVReader_ERROR_BAD_INPUT;
+    if (Files == NULL) return MLVReader_ERROR_BAD_INPUT;
     for (int f = 0; f < NumFiles; ++f)
     {
         /* 10TB seems like a reasonable file size limit */
-        if (Files[f] == NULL) return MLVReader_ERROR_BAD_ARGUMENT;
+        if (Files[f] == NULL) return MLVReader_ERROR_BAD_INPUT;
     }
 
     mlvfile_t mlv_files[101];
@@ -363,12 +384,10 @@ int64_t init_MLVReaderFromFILEs( MLVReader_t * Reader,
     for (int f = 0; f < NumFiles; ++f) {
         init_mlv_file_from_FILE(mlv_files+f, Files[f]);
     }
-    puts("hi1");
 
     int64_t return_value = init_mlv_reader( Reader, ReaderSize,
                                             mlv_files, NumFiles, MaxFrames );
 
-    puts("hi2");
     for (int f = 0; f < NumFiles; ++f) {
         uninit_mlv_file(mlv_files+f);
     }
@@ -385,15 +404,15 @@ int64_t init_MLVReaderFromMemory( MLVReader_t * Reader,
                                   int MaxFrames )
 {
     if (NumFiles > 101) return MLVReader_ERROR_TOO_MANY_FILES;
-    if (NumFiles <= 0) return MLVReader_ERROR_BAD_ARGUMENT;
-    if (Reader == NULL) return MLVReader_ERROR_BAD_ARGUMENT;
-    if (Files == NULL) return MLVReader_ERROR_BAD_ARGUMENT;
-    if (FileSizes == NULL) return MLVReader_ERROR_BAD_ARGUMENT;
+    if (NumFiles <= 0) return MLVReader_ERROR_BAD_INPUT;
+    if (Reader == NULL) return MLVReader_ERROR_BAD_INPUT;
+    if (Files == NULL) return MLVReader_ERROR_BAD_INPUT;
+    if (FileSizes == NULL) return MLVReader_ERROR_BAD_INPUT;
     for (int f = 0; f < NumFiles; ++f)
     {
         /* 10TB seems like a reasonable file size limit */
-        if (FileSizes[f] > (1024UL*1024*1024*10)) return MLVReader_ERROR_BAD_ARGUMENT;
-        if (Files[f] == NULL) return MLVReader_ERROR_BAD_ARGUMENT;
+        if (FileSizes[f] > (1024UL*1024*1024*10)) return MLVReader_ERROR_BAD_INPUT;
+        if (Files[f] == NULL) return MLVReader_ERROR_BAD_INPUT;
     }
 
     mlvfile_t mlv_files[101];
