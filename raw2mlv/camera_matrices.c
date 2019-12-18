@@ -10182,7 +10182,11 @@ CameraMatrixInfo_t * FindCameraMatrixInfo(char * CameraName)
                 for (int j = 0; j < 16; ++j)
                 {
                     if (*(words_to_find[i]) != 0 && *(words_in_name[j]) != 0)
+#ifdef WIN32
+                    if (!_stricmp(words_to_find[i], words_in_name[j]))
+#else
                     if (!strcasecmp(words_to_find[i], words_in_name[j]))
+#endif
                     {
                         // printf("matched %s, %s\n", words_to_find[i], words_in_name[j]);
                         ++matches;

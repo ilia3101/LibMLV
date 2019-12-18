@@ -2,10 +2,6 @@
     LibRaw wrapper, makes raw2mlv code nicer to read
  */
 
-/* Thank You Microsoft, Very Cool! */
-#ifdef _WIN32
-#define WIN32
-#endif
 #include "LibRaw/libraw/libraw.h"
 
 typedef struct {

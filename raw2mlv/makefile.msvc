@@ -2,16 +2,16 @@ CC=CL
 FLAGS=/c /Ox
 LibrawError=Please put libraw.dll, libraw.lib and libraw source in this folder, download the win64 zip from https://www.libraw.org/download to get both of those things."
 
-main: raw2mlv_c GetLibRAW LibMLV
-	$(CC) /Fe:raw2mlv raw2mlv.obj libraw.lib ../LibMLV/build/MSVC/libMLV.lib /link setargv.obj
+main: raw2mlv.obj GetLibRAW LibMLV
+	$(CC) /Fe:raw2mlv raw2mlv.obj libraw.lib ../lib/libmlv.lib /link setargv.obj
 
-raw2mlv_c: camera_matrices.c read_raw.c
+raw2mlv.obj: camera_matrices.c read_raw.c
 	$(CC) $(FLAGS) raw2mlv.c
 
 LibMLV:
-	cd ../LibMLV/build/MSVC
-	$(MAKE) /F ./makefile
-	cd ../../../raw2mlv
+	cd ../
+	$(MAKE) /F makefile.msvc
+	cd raw2mlv
 
 GetLibRAW:
 !IF !EXISTS(libraw.dll)

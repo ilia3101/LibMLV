@@ -34,6 +34,11 @@
 #include <stdlib.h>
 #include <math.h>
 
+/* Thank You Microsoft, Very Cool! */
+#ifdef _WIN32
+#define WIN32
+#endif
+
 #include "../include/LibMLV.h"
 
 /* LibRaw wrapper */
@@ -53,7 +58,12 @@ void print_help()
 " -f, --framerate <top> <bottom>  Framerate as a fraction, ex: -f 24000 1001\n"
 // " --crop <left>              Crop\n"
 "Example:\n"
-" ./raw2mlv pic1.raw pic2.raw pic3.raw -o myvid.mlv --bitdepth 12\n");
+#ifdef WIN32
+" .\\raw2mlv"
+#else
+" ./raw2mlv"
+#endif
+" pic1.raw pic2.raw pic3.raw -o myvid.mlv --bitdepth 12\n");
 }
 
 int main(int argc, char ** argv)
