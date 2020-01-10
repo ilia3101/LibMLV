@@ -17,14 +17,8 @@ typedef void MLVReader_t;
 #define MLVReader_ERROR_SKIPPED_FRAME               0x0008
 #define MLVReader_ERROR_CORRUPTED_FRAME             0x0010
 #define MLVReader_ERROR_CORRUPTED_METADATA          0x0020
-#define MLVReader_ERROR_NOT_ENOUGH_METADATA         0x0040
-#define MLVReader_ERROR_TOO_MANY_FILES              0x0080
-#define MLVReader_ERROR_FILE_TOO_BIG                0x0100
-#define MLVReader_ERROR_BAD_INPUT                   0x0200 /* You have provided shit input */
-#define MLVReader_ERROR_NULL_POINTER                0x0400 /* You are dumb */
-
-/* Generates a description of the error, output string should be 512 bytes */
-void MLVReaderGetErrorString(MLVReader_t * MLVReader, int Error, char * Out);
+#define MLVReader_ERROR_METADATA_NOT_AVAILABLE      0x0040
+#define MLVReader_ERROR_BAD_INPUT                   0x0080
 
 /******************************* Initialisation *******************************/
 
@@ -49,10 +43,13 @@ int64_t init_MLVReaderFromMemory( MLVReader_t * Reader,
 /* Uninitialise MLVReader */
 void uninit_MLVReader(MLVReader_t * Reader);
 
-/****************************** Metadata getters ******************************/
+/******************************** Data getters ********************************/
 
-/* Counts how many blocks of type BlockType there are */
-int32_t MLVReaderGetNumBlocks(MLVReader_t * Reader, char * BlockType);
+/* How many blocks the MLV file has in total */
+int32_t MLVReaderGetNumBlocks(MLVReader_t * Reader);
+
+/* Counts how many times blocks of BlockType occur in the MLV */
+int32_t MLVReaderGetNumBlocksOfType(MLVReader_t * Reader, char * BlockType);
 
 /* Get block data for block of BlockType, BlockIndex = 0 to get first
  * instance of that block, 1 to get second, etc. Bytes argument is maximum
@@ -64,28 +61,7 @@ int64_t MLVReaderGetBlockDataFromMemory( MLVReader_t * Reader, void ** Files,
                                          char * BlockType, int BlockIndex, 
                                          size_t Bytes, void * Out );
 
-/* Get frame width and height */
-int MLVReaderGetFrameWidth(MLVReader_t * Reader);
-int MLVReaderGetFrameHeight(MLVReader_t * Reader);
-
-/* Returns two ints to Out */
-int MLVReaderGetPixelAspectRatio(MLVReader_t * Reader, int * Out);
-
-/* FPS value */
-double MLVReaderGetFPS(MLVReader_t * Reader);
-/* Get top and bottom of the FPS fraction */
-int32_t MLVReaderGetFPSNumerator(MLVReader_t * Reader);
-int32_t MLVReaderGetFPSDenominator(MLVReader_t * Reader);
-
-char * MLVReaderGetCameraName(MLVReader_t * Reader);
-
-char * MLVReaderGetLensName(MLVReader_t * Reader);
-int MLVReaderGetLensFocalLength(MLVReader_t * Reader);
-
-int MLVReaderGetISO(MLVReader_t * Reader, uint64_t FrameIndex);
-
-/******************************** Frame getters *******************************/
-
+/* Returns memory needed for using next function (void * DecodingMemory) */
 size_t MLVReaderGetFrameDecodingMemorySize(MLVReader_t * MLVReader);
 
 /* Gets an undebayered frame from MLV file */
@@ -101,5 +77,38 @@ void MLVReaderGetFrameFromMemory( MLVReader_t * MLVReader,
                                   void * DecodingMemory,
                                   uint64_t FrameIndex,
                                   uint16_t * FrameOutput );
+
+/****************************** Metadata getters ******************************/
+
+/* Get frame width and height */
+int MLVReaderGetFrameWidth(MLVReader_t * Reader);
+int MLVReaderGetFrameHeight(MLVReader_t * Reader);
+
+/* Get black/ white level and bitdepth */
+int MLVReaderGetBlackLevel(MLVReader_t * Reader);
+int MLVReaderGetWhiteLevel(MLVReader_t * Reader);
+int MLVReaderGetBitdepth(MLVReader_t * Reader);
+
+// /* Which pixel bayer pattern starts at in the top left corner (RGGB, 0-3) */
+// int MLVReaderGetBayerPixel(MLVReader_t * Reader);
+
+/* Returns two ints to Out */
+int MLVReaderGetPixelAspectRatio(MLVReader_t * Reader, int * Out);
+
+/* FPS value */
+double MLVReaderGetFPS(MLVReader_t * Reader);
+/* Get top and bottom of the FPS fraction */
+int32_t MLVReaderGetFPSNumerator(MLVReader_t * Reader);
+int32_t MLVReaderGetFPSDenominator(MLVReader_t * Reader);
+
+/* Out should be 32 bytes in length */
+void MLVReaderGetCameraName(MLVReader_t * Reader, char * Out);
+
+/* Out should be 32 bytes in length */
+void MLVReaderGetLensName(MLVReader_t * Reader, char * Out);
+
+int MLVReaderGetLensFocalLength(MLVReader_t * Reader);
+
+int MLVReaderGetISO(MLVReader_t * Reader, uint64_t FrameIndex);
 
 #endif

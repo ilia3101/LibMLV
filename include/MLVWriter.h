@@ -22,8 +22,8 @@
  * SOFTWARE.
  */
 
-#ifndef _libmlv_write_h_
-#define _libmlv_write_h_
+#ifndef _MLVWriter_h_
+#define _MLVWriter_h_
 
 #include <stdint.h>
 

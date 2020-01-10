@@ -93,6 +93,7 @@ typedef struct
 
     /* Block counters */
     uint32_t num_blocks;
+    uint32_t num_misc_blocks;
     uint32_t num_expo_blocks;
     uint32_t num_audio_frames;
     uint32_t num_video_frames;
@@ -219,7 +220,7 @@ static void MLVReader_sort_blocks(MLVReader_t * Reader)
     quicksort(Reader->blocks, 0, Reader->num_blocks);
 }
 
-/* Will fill an MLVReader if given (should be big enough to fit all blocks) */
+/* TODO: this function is pretty great, but could be made even cleaner */
 static size_t init_mlv_reader( MLVReader_t * Reader, size_t ReaderSize,
                                mlvfile_t * File, int NumFiles,
                                int MaxFrames )
@@ -275,9 +276,43 @@ static size_t init_mlv_reader( MLVReader_t * Reader, size_t ReaderSize,
             print_size(block_size);
         }
 
+        /* Update block counts */
         if (strncmp((char *)block_name, "VIDF", 4) == 0) ++Reader->num_video_frames;
         if (strncmp((char *)block_name, "AUDF", 4) == 0) ++Reader->num_audio_frames;
         if (strncmp((char *)block_name, "EXPO", 4) == 0) ++Reader->num_expo_blocks;
+        else ++Reader->num_misc_blocks;
+
+        /* Set info for other default blocks... */
+        #define MLVReader_read_block(BlockType) \
+        { \
+            if (memcmp((char *)block_name, #BlockType, 4) == 0) \
+            { \
+                /* Store first instance of each block */ \
+                if (Reader->BlockType.num_blocks == 0) \
+                { \
+                    mlv_file_get_data( File+Reader->file_index, \
+                                       Reader->file_pos, \
+                                       sizeof(Reader->BlockType.block), \
+                                       &Reader->BlockType.block ); \
+                } \
+                Reader->BlockType.num_blocks++; \
+            } \
+        }
+
+        MLVReader_read_block(MLVI)
+        MLVReader_read_block(RAWI)
+        MLVReader_read_block(WAVI)
+        MLVReader_read_block(EXPO)
+        MLVReader_read_block(LENS)
+        MLVReader_read_block(RTCI)
+        MLVReader_read_block(IDNT)
+        MLVReader_read_block(INFO)
+        MLVReader_read_block(DISO)
+        MLVReader_read_block(MARK)
+        MLVReader_read_block(STYL)
+        MLVReader_read_block(ELVL)
+        MLVReader_read_block(WBAL)
+        MLVReader_read_block(RAWC)
 
         /* Set block info */
         {
@@ -345,11 +380,11 @@ static size_t init_mlv_reader( MLVReader_t * Reader, size_t ReaderSize,
         }
         else
         {
-            /* Lets say it's an EOS M shooting 12 bit lossless (kinda the lowest common denominator) */
+            /* Lets say it's an EOS M shooting 10 bit lossless (kinda the lowest common denominator) */
             average_frame_size = ((1728 * 978 * 10) / 8) * 0.57;
         }
 
-        /* Guessing 10 random blocks per file, a safe average */
+        /* An estimate: 10 misc blocks per file */
         return ReaderSize + (average_frame_size*total_file_size + 20 + 10*NumFiles) * sizeof(MLVReader_block_info_t);
     }
     else
@@ -369,13 +404,11 @@ int64_t init_MLVReaderFromFILEs( MLVReader_t * Reader,
                                  int NumFiles,
                                  int MaxFrames )
 {
-    if (NumFiles > 101) return MLVReader_ERROR_TOO_MANY_FILES;
+    if (NumFiles > 101) return MLVReader_ERROR_BAD_INPUT;
     if (NumFiles <= 0) return MLVReader_ERROR_BAD_INPUT;
     if (Reader == NULL) return MLVReader_ERROR_BAD_INPUT;
     if (Files == NULL) return MLVReader_ERROR_BAD_INPUT;
-    for (int f = 0; f < NumFiles; ++f)
-    {
-        /* 10TB seems like a reasonable file size limit */
+    for (int f = 0; f < NumFiles; ++f) {
         if (Files[f] == NULL) return MLVReader_ERROR_BAD_INPUT;
     }
 
@@ -403,18 +436,18 @@ int64_t init_MLVReaderFromMemory( MLVReader_t * Reader,
                                   int NumFiles,
                                   int MaxFrames )
 {
-    if (NumFiles > 101) return MLVReader_ERROR_TOO_MANY_FILES;
+    if (NumFiles > 101) return MLVReader_ERROR_BAD_INPUT;
     if (NumFiles <= 0) return MLVReader_ERROR_BAD_INPUT;
     if (Reader == NULL) return MLVReader_ERROR_BAD_INPUT;
     if (Files == NULL) return MLVReader_ERROR_BAD_INPUT;
     if (FileSizes == NULL) return MLVReader_ERROR_BAD_INPUT;
-    for (int f = 0; f < NumFiles; ++f)
-    {
+    for (int f = 0; f < NumFiles; ++f) {
         /* 10TB seems like a reasonable file size limit */
         if (FileSizes[f] > (1024UL*1024*1024*10)) return MLVReader_ERROR_BAD_INPUT;
         if (Files[f] == NULL) return MLVReader_ERROR_BAD_INPUT;
     }
 
+    /* Max is 101 file chunks right? 1x MLV + up to 100x M00-M99 */
     mlvfile_t mlv_files[101];
 
     for (int f = 0; f < NumFiles; ++f) {
@@ -435,4 +468,176 @@ void uninit_MLVReader(MLVReader_t * Reader)
 {
     /* Nothing to do as usual */
     return;
+}
+
+int32_t MLVReaderGetNumBlocks(MLVReader_t * Reader)
+{
+    return Reader->num_blocks;
+}
+
+int32_t MLVReaderGetNumBlocksOfType(MLVReader_t * Reader, char * BlockType)
+{
+    if (BlockType == NULL) return Reader->num_blocks;
+
+    if (memcmp(BlockType, "VIDF", 4) == 0) return Reader->num_video_frames;
+    if (memcmp(BlockType, "AUDF", 4) == 0) return Reader->num_audio_frames;
+
+    #define MLVReader_block_count_check(CheckBlockType) \
+        if (strcmp(BlockType, #CheckBlockType) == 0) return Reader->CheckBlockType.num_blocks;
+
+    MLVReader_block_count_check(MLVI)
+    MLVReader_block_count_check(RAWI)
+    MLVReader_block_count_check(WAVI)
+    MLVReader_block_count_check(EXPO)
+    MLVReader_block_count_check(LENS)
+    MLVReader_block_count_check(RTCI)
+    MLVReader_block_count_check(IDNT)
+    MLVReader_block_count_check(INFO)
+    MLVReader_block_count_check(DISO)
+    MLVReader_block_count_check(MARK)
+    MLVReader_block_count_check(STYL)
+    MLVReader_block_count_check(ELVL)
+    MLVReader_block_count_check(WBAL)
+    MLVReader_block_count_check(RAWC)
+
+    /* Now if none of the previous checks returned, actually count blocks */
+    uint32_t blockstr = *((uint32_t *)((void *)BlockType)); /* For faster comparison */
+    uint32_t block_count = 0;
+    uint32_t num_misc_blocks = Reader->num_blocks - Reader->num_video_frames - Reader->num_audio_frames - Reader->num_expo_blocks;
+
+    for (int b = 0; b < num_misc_blocks; ++b)
+    {
+        uint32_t current_blockstr = *((uint32_t *)((void *)&Reader->blocks[b]));
+        if (current_blockstr == blockstr) ++block_count;
+    }
+}
+
+/* Get block data for block of BlockType, BlockIndex = 0 to get first
+ * instance of that block, 1 to get second, etc. Bytes argument is maximum
+ * number of bytes to get. Outputs to Out. */
+int64_t MLVReaderGetBlockDataFromFiles( MLVReader_t * Reader, FILE ** Files,
+                                        char * BlockType, int BlockIndex,
+                                        size_t Bytes, void * Out );
+int64_t MLVReaderGetBlockDataFromMemory( MLVReader_t * Reader, void ** Files,
+                                         char * BlockType, int BlockIndex, 
+                                         size_t Bytes, void * Out );
+
+/* Returns memory needed for using next two functions (void * DecodingMemory) */
+size_t MLVReaderGetFrameDecodingMemorySize(MLVReader_t * MLVReader);
+
+/* Gets an undebayered frame from MLV file */
+void MLVReaderGetFrameFromFile( MLVReader_t * MLVReader,
+                                FILE ** Files,
+                                void * DecodingMemory,
+                                uint64_t FrameIndex,
+                                uint16_t * FrameOutput );
+
+/* Gets undebayered frame from MLV in memory */
+void MLVReaderGetFrameFromMemory( MLVReader_t * MLVReader,
+                                  void ** Files,
+                                  void * DecodingMemory,
+                                  uint64_t FrameIndex,
+                                  uint16_t * FrameOutput );
+
+/****************************** Metadata getters ******************************/
+
+int MLVReaderGetFrameWidth(MLVReader_t * Reader)
+{
+    return Reader->RAWI.block.xRes;
+}
+
+int MLVReaderGetFrameHeight(MLVReader_t * Reader)
+{
+    return Reader->RAWI.block.yRes;
+}
+
+int MLVReaderGetBlackLevel(MLVReader_t * Reader)
+{
+    return Reader->RAWI.block.raw_info.black_level;
+}
+
+int MLVReaderGetWhiteLevel(MLVReader_t * Reader)
+{
+    return Reader->RAWI.block.raw_info.white_level;
+}
+
+int MLVReaderGetBitdepth(MLVReader_t * Reader)
+{
+    return Reader->RAWI.block.raw_info.bits_per_pixel;
+}
+
+// /* Which pixel bayer pattern starts at in the top left corner (RGGB, 0-3) */
+// int MLVReaderGetBayerPixel(MLVReader_t * Reader)
+// {
+//     return 0;
+// }
+
+/* Returns two ints to Out */
+int MLVReaderGetPixelAspectRatio(MLVReader_t * Reader, int * Out)
+{
+    /* TODO: figure out the rawc block */
+    // if (Reader->RAWC.num_blocks != 0)
+    // {
+    //     /* code */
+    // }
+    // else
+    {
+        /* TODO: detect aspect on old 3x5 clips before RAWC */
+        Out[0] = 1;
+        Out[1] = 1;
+    }
+}
+
+/* FPS value */
+double MLVReaderGetFPS(MLVReader_t * Reader);
+
+/* Get top and bottom of the FPS fraction */
+int32_t MLVReaderGetFPSNumerator(MLVReader_t * Reader)
+{
+    return Reader->MLVI.block.sourceFpsNom;
+}
+
+int32_t MLVReaderGetFPSDenominator(MLVReader_t * Reader)
+{
+    return Reader->MLVI.block.sourceFpsDenom;
+}
+
+void MLVReaderGetCameraName(MLVReader_t * Reader, char * Out)
+{
+    strcpy(Out, (char *)Reader->IDNT.block.cameraName);
+}
+
+void MLVReaderGetLensName(MLVReader_t * Reader, char * Out)
+{
+    if (Reader->LENS.block.lensName[0] != 0)
+        strcpy(Out, (char *)Reader->LENS.block.lensName);
+    else
+        strcpy(Out, "No electronic lens");
+}
+
+int MLVReaderGetLensFocalLength(MLVReader_t * Reader)
+{
+    return Reader->LENS.block.focalLength;
+}
+
+int MLVReaderGetISO(MLVReader_t * Reader, uint64_t FrameIndex)
+{
+    if (Reader->num_expo_blocks == 0) return MLVReader_ERROR_METADATA_NOT_AVAILABLE;
+    if (FrameIndex >= Reader->num_video_frames) return MLVReader_ERROR_BAD_INPUT;
+
+    MLVReader_block_info_t * frame = Reader->blocks + (Reader->num_blocks-Reader->num_video_frames+FrameIndex);
+    uint64_t frame_timestamp = frame->time_stamp;
+
+    MLVReader_block_info_t * expo_blocks = Reader->blocks + Reader->num_misc_blocks;
+
+    for (int b = 0; b < Reader->num_expo_blocks-1; ++b)
+    {
+        if ( expo_blocks[ b ].time_stamp < frame_timestamp
+          && expo_blocks[b+1].time_stamp > frame_timestamp )
+        {
+            return expo_blocks[b].expo.iso;
+        }
+    }
+
+    return expo_blocks[Reader->num_expo_blocks-1].expo.iso;
 }
