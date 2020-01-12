@@ -4,6 +4,10 @@
 #include <stdio.h>
 #include <stdint.h>
 
+/**************************** MLV Block structures ****************************/
+#include "mlv_structs.h"
+/******************************************************************************/
+
 #ifndef MLVReader_src
 typedef void MLVReader_t;
 #endif

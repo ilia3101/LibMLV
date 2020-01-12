@@ -41,6 +41,9 @@
 
 #include "../include/LibMLV.h"
 
+/* Camid, for getting model ID for magic lantern cameras */
+#include "camid.c"
+
 /* LibRaw wrapper */
 #include "read_raw.c"
 
@@ -181,7 +184,7 @@ int main(int argc, char ** argv)
 
             MLVWriterSetCameraInfo( writer,
                                     RawGetCamName(raw), /* Camera name string */
-                                    0, /* Model ID, only useful for ML cams */
+                                    camidGetCameraModel(RawGetCamName(raw)), /* Model ID (not necessary for an MLV to be valid) */
                                     camera_matrix /* Daylight camera matrix */);
 
             /************** Leave blank space in file for headers *************/
