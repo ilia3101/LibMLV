@@ -21,7 +21,7 @@ if [ ! -e libraw_r.a ]; then
 				rm libraw.zip &> /dev/null
 				rm -rf $librawfolder &> /dev/null
 				echo "Downloaded"
-				break;;
+				;;
 			[Nn]* ) echo "Put libraw_r.a in this folder thanks bye."; exit;;
 			* ) exit;;
 		esac
