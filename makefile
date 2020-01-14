@@ -2,7 +2,7 @@ CC=gcc
 FLAGS=-c -fPIC -O3
 
 main: MLVWriter MLVReader MLVFrameUtils
-	ar rcs lib/libmlv.a *.o
+	ar rcs lib/libmlv.a lib/*.o
 	$(CC) -shared lib/*.o -o lib/libmlv.so
 
 MLVWriter:
