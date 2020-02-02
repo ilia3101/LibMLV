@@ -28,6 +28,7 @@
 #include <stddef.h>
 
 #include "../include/mlv_structs.h"
+#include "../include/MLVFileLocation.h"
 
 #define MLVReader_string "MLVReader 0.1"
 
@@ -39,20 +40,18 @@ struct \
         BlockType block; \
         mlv_hdr_t header; \
     }; \
-    uint8_t exists; /* Was this block found in a file */ \
-    uint8_t file_index; /* Which file (for split up MLVs - M00... M99) */ \
-    uint16_t empty_space; \
+    /* uint8_t exists; */ /* Was this block found in a file */ \
+    /* uint16_t empty_space; */ \
     uint32_t num_blocks; /* How many of this block was found */ \
-    uint64_t file_location; \
+    MLVFileLocation_t file_location; /* Location of the FIRST instance of this block */ \
 } BlockName;
 
 /* This structure has some unused bytes */
 typedef struct
 {
     uint8_t block_type[4]; /* Block name string */
-    uint8_t type; /* 0 = misc, 1 = block, 2 = audio frame, 3 = expo */
-    uint8_t file_index; /* Which clip it is in (for split up files M00...M99) */
-    uint64_t file_location; /* File location of block */
+    uint32_t size; /* Size of block. TODO: make this structure 32 bytes again */
+    MLVFileLocation_t file_location; /* File location of block */
     uint64_t time_stamp;
 
     union
@@ -70,6 +69,8 @@ typedef struct
         } expo;
     };
 } MLVReader_block_info_t;
+
+int fghjkl = sizeof(MLVReader_block_info_t);
 
 typedef struct
 {
@@ -168,19 +169,28 @@ static void print_size(uint64_t Size)
 
 
 /* Value for quicksort (so it gets sorted in correct order) */
+/* Order: video frames, audio frames, EXPOs, misc blocks... */
 static inline uint64_t BlockValue(MLVReader_block_info_t * Block)
 {
-    if (Block->type == 0)
-    {/* TODO: Fix 262 terrabyte limit for correct sorting */
-        /* For misc blocks, sort by file index, then file position */
-        return ((((uint64_t)(Block->file_index)) << 48UL) || (Block->file_location & 0x0000FFFFFFFFFFFFUL));
-    }
-    else
-    {
-        /* For Frames/Audio/Exposure, sort by type, then time stamp */
-        return ((((uint64_t)(Block->type)) << 56UL) || (Block->time_stamp & 0x0000FFFFFFFFFFFFUL));
-    }
+    /* Number prefix for sorting order (comment above) */
+    uint64_t prefix;
+
+    if (memcmp(Block->block_type, "VIDF", 4) == 0) prefix = 0;
+    else if (memcmp(Block->block_type, "AUDF", 4) == 0) prefix = 1;
+    else if (memcmp(Block->block_type, "EXPO", 4) == 0) prefix = 2;
+    else prefix = 3;
+
+    /* TODO: don't crop timestamp */
+    return ((prefix << 56UL) | (Block->time_stamp & (uint64_t)0x00ffffffffffffffULL));
 }
+
+// static inline int CompareBlock(MLVReader_block_info_t * Block1, MLVReader_block_info_t * Block2, int Direction)
+// {
+//     if (direction == 0) /* Smaller than or equal to */
+//     {
+//         return 1;
+//     }
+// }
 
 /* TODO: find better solution than copied recursive quicksort */
 static void quicksort(MLVReader_block_info_t * Blocks, int first, int last)
@@ -215,12 +225,71 @@ static void quicksort(MLVReader_block_info_t * Blocks, int first, int last)
    }
 }
 
+
+// Function to run quicksort on an array of integers
+// l is the leftmost starting index, which begins at 0
+// r is the rightmost starting index, which begins at array length - 1
+// void quicksort(MLVReader_block_info_t * Blocks, uint64_t l, uint64_t r)
+// {
+//     // Base case: No need to sort arrays of length <= 1
+//     if (l >= r)
+//     {
+//         return;
+//     }
+
+//     uint64_t pivot = BlockValue(Blocks + ((r+l)>>1)); /* midpoint */
+//     // uint64_t pivot = 0; /* midpoint */
+
+//     uint64_t cnt = l;
+
+//     for (uint64_t i = l; i <= r; ++i)
+//     {
+//         if (BlockValue(&Blocks[i]) <= pivot)
+//         {
+//             MLVReader_block_info_t tmp = Blocks[cnt];
+//             Blocks[cnt] = Blocks[i];
+//             Blocks[i] = tmp;
+
+//             ++cnt;
+//         }
+//     }
+    
+//     // NOTE: cnt is currently at one plus the pivot's index 
+//     // (Hence, the cnt-2 when recursively sorting the left side of pivot)
+//     quicksort(Blocks, l, cnt-2); // Recursively sort the left side of pivot
+//     quicksort(Blocks, cnt, r);   // Recursively sort the right side of pivot
+// }
+
 static void MLVReader_sort_blocks(MLVReader_t * Reader)
 {
-    quicksort(Reader->blocks, 0, Reader->num_blocks);
+    // MLVReaderPrintAllBlocks(Reader);
+    quicksort(Reader->blocks, 0, Reader->num_blocks-1);
+    // puts("---- SORTED ----");
+    // MLVReaderPrintAllBlocks(Reader);
+    /* Bubble sort for now */
+    // uint64_t num_blocks = Reader->num_blocks;
+    // for (uint64_t i = 0; i < num_blocks; ++i)
+    // {
+    //     int sorted = 1;
+    //     for (uint64_t j = i; j < num_blocks-1; ++j)
+    //     {
+    //         MLVReader_block_info_t * block1 = Reader->blocks+j;
+    //         MLVReader_block_info_t * block2 = block1+1;
+
+    //         if (BlockValue(block1) > BlockValue(block2))
+    //         {
+    //             MLVReader_block_info_t tmp = *block1;
+    //             *block1 = *block2;
+    //             *block2 = tmp;
+    //             sorted = 0;
+    //         }
+    //     }
+    //     if (sorted) break;
+    // }
 }
 
-/* TODO: this function is pretty great, but could be made even cleaner */
+/* TODO: this function is pretty great, but could be made even cleaner
+ * IDEA: create a separate object/function for mapping blocks of an MLV file */
 static size_t init_mlv_reader( MLVReader_t * Reader, size_t ReaderSize,
                                mlvfile_t * File, int NumFiles,
                                int MaxFrames )
@@ -257,35 +326,39 @@ static size_t init_mlv_reader( MLVReader_t * Reader, size_t ReaderSize,
          && Reader->num_video_frames < MaxFrames
          && !Reader->finished_parsing )
     {
-        uint8_t block_name[4];
-        uint32_t block_size;
-        uint64_t time_stamp;
-        mlv_file_get_data(File+Reader->file_index, Reader->file_pos, 4 * sizeof(uint8_t), block_name);
-        mlv_file_get_data(File+Reader->file_index, Reader->file_pos+4, sizeof(uint32_t), &block_size);
-        mlv_file_get_data(File+Reader->file_index, Reader->file_pos+8, sizeof(uint64_t), &time_stamp);
+        #define BLOCK_DATA_MAX 64
+        union {
+            uint8_t block_data[BLOCK_DATA_MAX];
+            mlv_hdr_t header;
+        } h;
+
+        int read_bytes = (BLOCK_DATA_MAX < current_file_size-Reader->file_pos) ? BLOCK_DATA_MAX : current_file_size-Reader->file_pos;
+        mlv_file_get_data(File+Reader->file_index, Reader->file_pos, read_bytes, h.block_data);
+
+        // printf("---- %.4s, %i\n", &h.header, h.header.blockSize);
 
         /* Check if the file ends before block or if block is too small */
-        if ((Reader->file_pos+block_size) > current_file_size || block_size < 16) {
+        if ((Reader->file_pos+h.header.blockSize) > current_file_size || h.header.blockSize < 16) {
             /* TODO: deal with this in some way */
         }
 
         /* Print block (unless its null or vidf) */
-        if (strncmp((char *)block_name, "NULL", 4) && strncmp((char *)block_name, "VIDF", 4))
+        if (memcmp(h.header.blockType, "NULL", 4) && memcmp(h.header.blockType, "VIDF", 4))
         {
-            printf("%llu Block '%.4s' ", time_stamp, (char *)block_name);
-            print_size(block_size);
+            printf("%llu Block '%.4s' ", h.header.timestamp, (char *)h.header.blockType);
+            print_size(h.header.blockSize);
         }
 
         /* Update block counts */
-        if (strncmp((char *)block_name, "VIDF", 4) == 0) ++Reader->num_video_frames;
-        if (strncmp((char *)block_name, "AUDF", 4) == 0) ++Reader->num_audio_frames;
-        if (strncmp((char *)block_name, "EXPO", 4) == 0) ++Reader->num_expo_blocks;
+        if (memcmp(h.header.blockType, "VIDF", 4) == 0) ++Reader->num_video_frames;
+        if (memcmp(h.header.blockType, "AUDF", 4) == 0) ++Reader->num_audio_frames;
+        if (memcmp(h.header.blockType, "EXPO", 4) == 0) ++Reader->num_expo_blocks;
         else ++Reader->num_misc_blocks;
 
         /* Set info for other default blocks... */
         #define MLVReader_read_block(BlockType) \
         { \
-            if (memcmp((char *)block_name, #BlockType, 4) == 0) \
+            if (memcmp(h.header.blockType, #BlockType, 4) == 0) \
             { \
                 /* Store first instance of each block */ \
                 if (Reader->BlockType.num_blocks == 0) \
@@ -316,42 +389,33 @@ static size_t init_mlv_reader( MLVReader_t * Reader, size_t ReaderSize,
 
         /* Set block info */
         {
-            memcpy(block->block_type, block_name, 4);
-            block->file_index = Reader->file_index;
-            block->file_location = Reader->file_pos;
-            block->time_stamp = time_stamp;
+            memcpy(block->block_type, h.header.blockType, 4);
+            block->time_stamp = h.header.timestamp;
+            block->size = h.header.blockSize;
+            MLVFileLocationSetFileIndex(block->file_location, Reader->file_index);
+            MLVFileLocationSetPosition(block->file_location, Reader->file_pos);
 
-            if (strncmp((char *)block_name, "AUDF", 4) == 0)
+            if (memcmp(h.header.blockType, "AUDF", 4) == 0)
             {
-                mlv_file_get_data( File+Reader->file_index,
-                                   Reader->file_pos+offsetof(mlv_audf_hdr_t,frameSpace),
-                                   sizeof(uint32_t), &block->frame.offset );
-                block->frame.size = block_size - (sizeof(mlv_audf_hdr_t) + block->frame.offset);
-                Reader->total_frame_data += block_size;
+                block->frame.offset = ((mlv_audf_hdr_t *)h.block_data)->frameSpace;
+                block->frame.size = h.header.blockSize - (sizeof(mlv_audf_hdr_t) + block->frame.offset);
+                Reader->total_frame_data += h.header.blockSize;
             }
-            else if (strncmp((char *)block_name, "VIDF", 4) == 0)
+            else if (memcmp(h.header.blockType, "VIDF", 4) == 0)
             {
-                mlv_file_get_data( File+Reader->file_index,
-                                   Reader->file_pos+offsetof(mlv_vidf_hdr_t,frameSpace),
-                                   sizeof(uint32_t), &block->frame.offset );
-                block->frame.size = block_size - (sizeof(mlv_vidf_hdr_t) + block->frame.offset);
-                Reader->total_frame_data += block_size;
+                block->frame.offset = ((mlv_vidf_hdr_t *)h.block_data)->frameSpace;
+                block->frame.size = h.header.blockSize - (sizeof(mlv_vidf_hdr_t) + block->frame.offset);
+                Reader->total_frame_data += h.header.timestamp;
             }
-            else if (strncmp((char *)block_name, "EXPO", 4) == 0)
+            else if (memcmp(h.header.blockType, "EXPO", 4) == 0)
             {
-                mlv_file_get_data( File+Reader->file_index,
-                                   Reader->file_pos+offsetof(mlv_expo_hdr_t,isoAnalog),
-                                   sizeof(uint32_t), &block->expo.iso );
-                uint64_t expo_microseconds;
-                mlv_file_get_data( File+Reader->file_index,
-                                   Reader->file_pos+offsetof(mlv_expo_hdr_t,isoAnalog),
-                                   sizeof(uint32_t), &expo_microseconds );
-                block->expo.shutter = (uint32_t)expo_microseconds;
+                block->expo.iso = ((mlv_expo_hdr_t *)h.block_data)->isoValue;
+                block->expo.shutter = (uint32_t)((mlv_expo_hdr_t *)h.block_data)->shutterValue; /* TODO: maybe fix the int64-int32 thing here */
             }
             else {;} /* No special info stored for other types */
         }
 
-        Reader->file_pos += block_size;
+        Reader->file_pos += h.header.blockSize;
         ++Reader->num_blocks;
         ++block;
 
@@ -447,7 +511,7 @@ int64_t init_MLVReaderFromMemory( MLVReader_t * Reader,
         if (Files[f] == NULL) return MLVReader_ERROR_BAD_INPUT;
     }
 
-    /* Max is 101 file chunks right? 1x MLV + up to 100x M00-M99 */
+    /* Max is 101 file parts? One .MLV + up to a hundred .M00-.M99 */
     mlvfile_t mlv_files[101];
 
     for (int f = 0; f < NumFiles; ++f) {
@@ -479,11 +543,16 @@ int32_t MLVReaderGetNumBlocksOfType(MLVReader_t * Reader, char * BlockType)
 {
     if (BlockType == NULL) return Reader->num_blocks;
 
-    if (memcmp(BlockType, "VIDF", 4) == 0) return Reader->num_video_frames;
-    if (memcmp(BlockType, "AUDF", 4) == 0) return Reader->num_audio_frames;
+    char block_type[4]; /* local */
+    memcpy(block_type, BlockType, 4);
+
+    if (memcmp(block_type, "VIDF", 4) == 0) return Reader->num_video_frames;
+    if (memcmp(block_type, "AUDF", 4) == 0) return Reader->num_audio_frames;
 
     #define MLVReader_block_count_check(CheckBlockType) \
-        if (strcmp(BlockType, #CheckBlockType) == 0) return Reader->CheckBlockType.num_blocks;
+    { \
+        if (strcmp(block_type, #CheckBlockType) == 0) return Reader->CheckBlockType.num_blocks; \
+    }
 
     MLVReader_block_count_check(MLVI)
     MLVReader_block_count_check(RAWI)
@@ -501,36 +570,66 @@ int32_t MLVReaderGetNumBlocksOfType(MLVReader_t * Reader, char * BlockType)
     MLVReader_block_count_check(RAWC)
 
     /* Now if none of the previous checks returned, actually count blocks */
-    uint32_t blockstr = *((uint32_t *)((void *)BlockType)); /* For faster comparison */
     uint32_t block_count = 0;
-    uint32_t num_misc_blocks = Reader->num_blocks - Reader->num_video_frames - Reader->num_audio_frames - Reader->num_expo_blocks;
+    MLVReader_block_info_t * blocks = Reader->blocks + (Reader->num_blocks - Reader->num_misc_blocks);
 
-    for (int b = 0; b < num_misc_blocks; ++b)
+    for (int b = 0; b < Reader->num_misc_blocks; ++b)
     {
-        uint32_t current_blockstr = *((uint32_t *)((void *)&Reader->blocks[b]));
-        if (current_blockstr == blockstr) ++block_count;
+        if (memcmp(blocks[b].block_type, block_type, 4) == 0) ++block_count;
     }
+
+    return block_count;
 }
 
-/* Get block data for block of BlockType, BlockIndex = 0 to get first
- * instance of that block, 1 to get second, etc. Bytes argument is maximum
- * number of bytes to get. Outputs to Out. */
 int64_t MLVReaderGetBlockDataFromFiles( MLVReader_t * Reader, FILE ** Files,
                                         char * BlockType, int BlockIndex,
-                                        size_t Bytes, void * Out );
+                                        size_t MaxBytes, void * Out )
+{
+    uint64_t blocks_found = 0;
+    uint64_t read_size = 0;
+
+    for (int b = 0; b < Reader->num_misc_blocks; ++b)
+    {
+        MLVReader_block_info_t * block = &Reader->blocks[b];
+
+        if (memcmp(block->block_type, BlockType, 4) == 0)
+        {
+            if (blocks_found == BlockIndex)
+            {
+                fseek(Files[MLVFileLocationGetFileIndex(block->file_location)], MLVFileLocationGetPosition(block->file_location), SEEK_SET);
+                read_size = (MaxBytes < block->size) ? MaxBytes : block->size;
+                fread(Out, read_size, 1, Files[MLVFileLocationGetFileIndex(block->file_location)]);
+                return 0;
+            }
+            else
+            {
+                ++blocks_found;
+            }
+        }
+    }
+
+    return read_size;
+}
+
 int64_t MLVReaderGetBlockDataFromMemory( MLVReader_t * Reader, void ** Files,
                                          char * BlockType, int BlockIndex, 
-                                         size_t Bytes, void * Out );
+                                         size_t MaxBytes, void * Out );
 
 /* Returns memory needed for using next two functions (void * DecodingMemory) */
-size_t MLVReaderGetFrameDecodingMemorySize(MLVReader_t * MLVReader);
+size_t MLVReaderGetFrameDecodingMemorySize(MLVReader_t * MLVReader)
+{
+    return 1000;
+}
 
 /* Gets an undebayered frame from MLV file */
 void MLVReaderGetFrameFromFile( MLVReader_t * MLVReader,
                                 FILE ** Files,
                                 void * DecodingMemory,
                                 uint64_t FrameIndex,
-                                uint16_t * FrameOutput );
+                                uint16_t * FrameOutput )
+{
+    return;
+}
 
 /* Gets undebayered frame from MLV in memory */
 void MLVReaderGetFrameFromMemory( MLVReader_t * MLVReader,
@@ -622,22 +721,32 @@ int MLVReaderGetLensFocalLength(MLVReader_t * Reader)
 
 int MLVReaderGetISO(MLVReader_t * Reader, uint64_t FrameIndex)
 {
-    if (Reader->num_expo_blocks == 0) return MLVReader_ERROR_METADATA_NOT_AVAILABLE;
+    if (Reader->num_expo_blocks == 0) return MLVReader_ERROR_DATA_NOT_AVAILABLE;
     if (FrameIndex >= Reader->num_video_frames) return MLVReader_ERROR_BAD_INPUT;
 
-    MLVReader_block_info_t * frame = Reader->blocks + (Reader->num_blocks-Reader->num_video_frames+FrameIndex);
+    MLVReader_block_info_t * frame = Reader->blocks + FrameIndex;
     uint64_t frame_timestamp = frame->time_stamp;
 
-    MLVReader_block_info_t * expo_blocks = Reader->blocks + Reader->num_misc_blocks;
+    MLVReader_block_info_t * expo_blocks = Reader->blocks + (Reader->num_video_frames + Reader->num_audio_frames);
+    // printf("e blocks = %i, %.4s, %i, %i\n", Reader->num_expo_blocks, expo_blocks, Reader->num_video_frames, Reader->num_audio_frames);
 
     for (int b = 0; b < Reader->num_expo_blocks-1; ++b)
     {
         if ( expo_blocks[ b ].time_stamp < frame_timestamp
           && expo_blocks[b+1].time_stamp > frame_timestamp )
         {
+            puts("success!");
             return expo_blocks[b].expo.iso;
         }
     }
 
     return expo_blocks[Reader->num_expo_blocks-1].expo.iso;
+}
+
+void MLVReaderPrintAllBlocks(MLVReader_t * Reader)
+{
+    for (uint64_t i = 0; i < Reader->num_blocks; ++i)
+    {
+        printf("%i: %.4s\n", i, Reader->blocks+i);
+    }
 }

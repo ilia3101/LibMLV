@@ -127,7 +127,7 @@ void init_MLVWriter( MLVWriter_t * Writer,
     Writer->RAWI.block.raw_info.active_area.x2 = Width;
     Writer->RAWI.block.raw_info.active_area.y2 = Height;
 
-    /* Set default bayer pattern */
+    /* Set default bayer pattern (WHY SUCH A WEIRD NUMBER!!!) */
     Writer->RAWI.block.raw_info.cfa_pattern = 0x02010100;
 
     /* Compression and bit depth */
@@ -189,7 +189,7 @@ void MLVWriterSetCameraInfo( MLVWriter_t * Writer,
 }
 
 /* Checks if Block should be written, and if it is, the block's size is added
- * to SizeVariable. For calculating size of header data that will be written */
+ * to size variable. For calculating size of header data that will be written */
 #define mlv_add_block_size(Block, SizeVariable) \
 { \
     if (Block.write) {SizeVariable += Block.header.blockSize; } \

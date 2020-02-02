@@ -25,8 +25,14 @@
 #ifndef _LibMLV_
 #define _LibMLV_
 
+/* The best parts */
 #include "MLVReader.h"
 #include "MLVWriter.h"
+
+/* Functions for bit packing/unpacking and compressing */
 #include "MLVFrameUtils.h"
+
+/* Type for storing where a block is (file index and position) */
+#include "MLVFileLocation.h"
 
 #endif

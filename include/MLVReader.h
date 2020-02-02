@@ -12,6 +12,9 @@
 typedef void MLVReader_t;
 #endif
 
+
+void MLVReaderPrintAllBlocks(MLVReader_t * Reader);
+
 /*********************************** ERRORS ***********************************/
 
 /* Error bits, invert returned values to get these codes */
@@ -21,8 +24,9 @@ typedef void MLVReader_t;
 #define MLVReader_ERROR_SKIPPED_FRAME               0x0008
 #define MLVReader_ERROR_CORRUPTED_FRAME             0x0010
 #define MLVReader_ERROR_CORRUPTED_METADATA          0x0020
-#define MLVReader_ERROR_METADATA_NOT_AVAILABLE      0x0040
+#define MLVReader_ERROR_DATA_NOT_AVAILABLE          0x0040
 #define MLVReader_ERROR_BAD_INPUT                   0x0080
+#define MLVReader_ERROR_DROPPED_FRAME               0x0100
 
 /******************************* Initialisation *******************************/
 
@@ -49,21 +53,15 @@ void uninit_MLVReader(MLVReader_t * Reader);
 
 /******************************** Data getters ********************************/
 
-/* How many blocks the MLV file has in total */
-int32_t MLVReaderGetNumBlocks(MLVReader_t * Reader);
-
-/* Counts how many times blocks of BlockType occur in the MLV */
-int32_t MLVReaderGetNumBlocksOfType(MLVReader_t * Reader, char * BlockType);
-
 /* Get block data for block of BlockType, BlockIndex = 0 to get first
- * instance of that block, 1 to get second, etc. Bytes argument is maximum
- * number of bytes to get. Outputs to Out. */
+ * instance of that block, 1 to get second, etc. MaxBytes argument is maximum
+ * number of bytes to read. Positive return value is number of bytes read. */
 int64_t MLVReaderGetBlockDataFromFiles( MLVReader_t * Reader, FILE ** Files,
                                         char * BlockType, int BlockIndex,
-                                        size_t Bytes, void * Out );
+                                        size_t MaxBytes, void * Out );
 int64_t MLVReaderGetBlockDataFromMemory( MLVReader_t * Reader, void ** Files,
                                          char * BlockType, int BlockIndex, 
-                                         size_t Bytes, void * Out );
+                                         size_t MaxBytes, void * Out );
 
 /* Returns memory needed for using next function (void * DecodingMemory) */
 size_t MLVReaderGetFrameDecodingMemorySize(MLVReader_t * MLVReader);
@@ -83,6 +81,12 @@ void MLVReaderGetFrameFromMemory( MLVReader_t * MLVReader,
                                   uint16_t * FrameOutput );
 
 /****************************** Metadata getters ******************************/
+
+/* How many blocks the MLV file has in total */
+int32_t MLVReaderGetNumBlocks(MLVReader_t * Reader);
+
+/* Counts how many times blocks of BlockType occur in the MLV */
+int32_t MLVReaderGetNumBlocksOfType(MLVReader_t * Reader, char * BlockType);
 
 /* Get frame width and height */
 int MLVReaderGetFrameWidth(MLVReader_t * Reader);
