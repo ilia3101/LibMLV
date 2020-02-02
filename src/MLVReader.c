@@ -225,67 +225,10 @@ static void quicksort(MLVReader_block_info_t * Blocks, int first, int last)
    }
 }
 
-
-// Function to run quicksort on an array of integers
-// l is the leftmost starting index, which begins at 0
-// r is the rightmost starting index, which begins at array length - 1
-// void quicksort(MLVReader_block_info_t * Blocks, uint64_t l, uint64_t r)
-// {
-//     // Base case: No need to sort arrays of length <= 1
-//     if (l >= r)
-//     {
-//         return;
-//     }
-
-//     uint64_t pivot = BlockValue(Blocks + ((r+l)>>1)); /* midpoint */
-//     // uint64_t pivot = 0; /* midpoint */
-
-//     uint64_t cnt = l;
-
-//     for (uint64_t i = l; i <= r; ++i)
-//     {
-//         if (BlockValue(&Blocks[i]) <= pivot)
-//         {
-//             MLVReader_block_info_t tmp = Blocks[cnt];
-//             Blocks[cnt] = Blocks[i];
-//             Blocks[i] = tmp;
-
-//             ++cnt;
-//         }
-//     }
-    
-//     // NOTE: cnt is currently at one plus the pivot's index 
-//     // (Hence, the cnt-2 when recursively sorting the left side of pivot)
-//     quicksort(Blocks, l, cnt-2); // Recursively sort the left side of pivot
-//     quicksort(Blocks, cnt, r);   // Recursively sort the right side of pivot
-// }
-
 static void MLVReader_sort_blocks(MLVReader_t * Reader)
 {
     // MLVReaderPrintAllBlocks(Reader);
     quicksort(Reader->blocks, 0, Reader->num_blocks-1);
-    // puts("---- SORTED ----");
-    // MLVReaderPrintAllBlocks(Reader);
-    /* Bubble sort for now */
-    // uint64_t num_blocks = Reader->num_blocks;
-    // for (uint64_t i = 0; i < num_blocks; ++i)
-    // {
-    //     int sorted = 1;
-    //     for (uint64_t j = i; j < num_blocks-1; ++j)
-    //     {
-    //         MLVReader_block_info_t * block1 = Reader->blocks+j;
-    //         MLVReader_block_info_t * block2 = block1+1;
-
-    //         if (BlockValue(block1) > BlockValue(block2))
-    //         {
-    //             MLVReader_block_info_t tmp = *block1;
-    //             *block1 = *block2;
-    //             *block2 = tmp;
-    //             sorted = 0;
-    //         }
-    //     }
-    //     if (sorted) break;
-    // }
 }
 
 /* TODO: this function is pretty great, but could be made even cleaner
