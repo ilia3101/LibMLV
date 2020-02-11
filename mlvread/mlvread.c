@@ -93,9 +93,21 @@ int main(int argc, char ** argv)
 
     printMlvInfo(reader);
 
-    uint16_t * frameoutput = malloc(MLVReaderGetFrameWidth(reader) * MLVReaderGetFrameHeight(reader) * sizeof(uint16_t));
+    int num_pixels = MLVReaderGetFrameWidth(reader) * MLVReaderGetFrameHeight(reader);
+
+    uint16_t * frameoutput = malloc(num_pixels * sizeof(uint16_t));
 
     MLVReaderGetFrameFromFile(reader, mlv_files, malloc(100000), 0, frameoutput);
+
+    uint8_t * frame_bmp = malloc(num_pixels * sizeof(uint8_t) * 3);
+
+    int black = MLVReaderGetBlackLevel(Reader);
+    int white = MLVReaderGetWhiteLevel(Reader)-black;
+    for (int i = 0; i < num_pixels; ++i)
+    {
+        int value = ((frameoutput[i]-black)*255)/white;
+        frame_bmp[i * 3] = frameoutput
+    }
 
     for (int f = 1; f < argc; ++f)
     {

@@ -64,17 +64,17 @@ int64_t MLVReaderGetBlockDataFromMemory( MLVReader_t * Reader, void ** Files,
                                          size_t MaxBytes, void * Out );
 
 /* Returns memory needed for using next function (void * DecodingMemory) */
-size_t MLVReaderGetFrameDecodingMemorySize(MLVReader_t * MLVReader);
+size_t MLVReaderGetFrameDecodingMemorySize(MLVReader_t * Reader);
 
 /* Gets an undebayered frame from MLV file */
-void MLVReaderGetFrameFromFile( MLVReader_t * MLVReader,
+void MLVReaderGetFrameFromFile( MLVReader_t * Reader,
                                 FILE ** Files,
                                 void * DecodingMemory,
                                 uint64_t FrameIndex,
                                 uint16_t * FrameOutput );
 
 /* Gets undebayered frame from MLV in memory */
-void MLVReaderGetFrameFromMemory( MLVReader_t * MLVReader,
+void MLVReaderGetFrameFromMemory( MLVReader_t * Reader,
                                   void ** Files,
                                   void * DecodingMemory,
                                   uint64_t FrameIndex,
