@@ -26,7 +26,6 @@
 #include <stdint.h>
 #include <string.h>
 
-typedef struct MLVWriter MLVWriter_t;
 #include "../include/MLVWriter.h"
 #include "../include/mlv_structs.h"
 

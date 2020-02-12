@@ -25,10 +25,8 @@
 #ifndef _LibMLV_
 #define _LibMLV_
 
-/* Library user does not see the actual types, this is to ensure binary
+/* Library user does not see the actual types, this is forces binary
  * compatibility in dynamic linking. You can still look at the code. */
-typedef void MLVReader_t;
-typedef void MLVWriter_t;
 
 /* The best parts */
 #include "MLVReader.h"

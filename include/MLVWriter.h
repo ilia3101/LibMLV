@@ -27,6 +27,8 @@
 
 #include <stdint.h>
 
+typedef struct MLVWriter MLVWriter_t;
+
 /******************************* Initialisation *******************************/
 
 /* Returns amount of memory you need to allocate for an MLV writer */

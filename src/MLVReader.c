@@ -27,7 +27,6 @@
 #include <string.h>
 #include <stddef.h>
 
-typedef struct MLVReader MLVReader_t;
 #include "../include/MLVReader.h"
 #include "../include/mlv_structs.h"
 
