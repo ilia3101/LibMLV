@@ -27,7 +27,7 @@
 
 #include "../include/MLVFrameUtils.h"
 
-/* This probably only works on little endian (just needs an extra swap at the
+/* Packing probably only works on little endian (just needs an extra swap at the
  * end to fix this, does not matter right now) */
 
 void MLVPackFrame14(uint16_t * Data, size_t Elements, void * Out)

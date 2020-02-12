@@ -8,8 +8,6 @@
 #include "mlv_structs.h"
 /******************************************************************************/
 
-void MLVReaderPrintAllBlocks(MLVReader_t * Reader);
-
 /*********************************** ERRORS ***********************************/
 
 /* Error bits, invert returned values to get these codes */
@@ -113,5 +111,10 @@ void MLVReaderGetLensName(MLVReader_t * Reader, char * Out);
 int MLVReaderGetLensFocalLength(MLVReader_t * Reader);
 
 int MLVReaderGetISO(MLVReader_t * Reader, uint64_t FrameIndex);
+
+/************************************ MISC ************************************/
+
+/* TODO: remove this function */
+void MLVReaderPrintAllBlocks(MLVReader_t * Reader);
 
 #endif
