@@ -27,10 +27,6 @@
 
 #include <stdint.h>
 
-#ifndef MLVWriter_src
-typedef void MLVWriter_t;
-#endif
-
 /******************************* Initialisation *******************************/
 
 /* Returns amount of memory you need to allocate for an MLV writer */

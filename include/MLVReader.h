@@ -8,11 +8,6 @@
 #include "mlv_structs.h"
 /******************************************************************************/
 
-#ifndef MLVReader_src
-typedef void MLVReader_t;
-#endif
-
-
 void MLVReaderPrintAllBlocks(MLVReader_t * Reader);
 
 /*********************************** ERRORS ***********************************/

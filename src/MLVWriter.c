@@ -26,6 +26,8 @@
 #include <stdint.h>
 #include <string.h>
 
+typedef struct MLVWriter MLVWriter_t;
+#include "../include/MLVWriter.h"
 #include "../include/mlv_structs.h"
 
 #define MLVWriter_header_block(BlockType, BlockName) \
@@ -38,7 +40,7 @@ struct \
     int write; /* Should this block be written? */ \
 } BlockName;
 
-typedef struct
+typedef struct MLVWriter
 {
     /* Header blocks */
     MLVWriter_header_block(mlv_file_hdr_t, MLVI)
@@ -59,11 +61,7 @@ typedef struct
     mlv_vidf_hdr_t VIDF;
     mlv_audf_hdr_t AUDF;
 
-} MLVWriter_t;
-
-#define MLVWriter_src
-#include "../include/MLVWriter.h"
-#undef MLVWriter_src
+};
 
 /* Sets string and block size */
 #define mlv_init_block(Block, String) \

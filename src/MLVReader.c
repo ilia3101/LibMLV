@@ -27,6 +27,8 @@
 #include <string.h>
 #include <stddef.h>
 
+typedef struct MLVReader MLVReader_t;
+#include "../include/MLVReader.h"
 #include "../include/mlv_structs.h"
 #include "../include/MLVFileLocation.h"
 
@@ -72,7 +74,7 @@ typedef struct
 
 int fghjkl = sizeof(MLVReader_block_info_t);
 
-typedef struct
+typedef struct MLVReader
 {
     char string[16];
 
@@ -112,11 +114,7 @@ typedef struct
      * timestamp. Misc blocks first, then EXPOs, then AUDFs, then VIDFs */
     MLVReader_block_info_t blocks[/* num_blocks */];
 
-} MLVReader_t;
-
-#define MLVReader_src
-#include "../include/MLVReader.h"
-#undef MLVReader_src
+};
 
 /***** Wrapper for memory or a FILE, so they can be treated the same way ******/
 typedef struct {
