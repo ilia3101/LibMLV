@@ -184,28 +184,28 @@ static inline uint64_t BlockValue(MLVReader_block_info_t * Block)
     return ((prefix << 56UL) | (Block->time_stamp & (uint64_t)0x00ffffffffffffffULL));
 }
 
-#define TypeOfBlock(Block) \
-    (memcmp(Block->block_type, "VIDF", 4)) ? (0) : ( \
-    (memcmp(Block->block_type, "AUDF", 4)) ? (1) : ( \
-    (memcmp(Block->block_type, "EXPO", 4)) ? (2) : 3 \
-))
+// #define TypeOfBlock(Block) \
+//     (memcmp(Block->block_type, "VIDF", 4)) ? (0) : ( \
+//     (memcmp(Block->block_type, "AUDF", 4)) ? (1) : ( \
+//     (memcmp(Block->block_type, "EXPO", 4)) ? (2) : 3 \
+// ))
 
-static inline int CompareBlock(MLVReader_block_info_t * Block1, MLVReader_block_info_t * Block2, int Direction)
-{
-    int block1type = TypeOfBlock(Block1);
-    int block2type = TypeOfBlock(Block2);
+// static inline int CompareBlock(MLVReader_block_info_t * Block1, MLVReader_block_info_t * Block2, int Direction)
+// {
+//     int block1type = TypeOfBlock(Block1);
+//     int block2type = TypeOfBlock(Block2);
 
-    if (direction == 0) /* Block1 smaller than or equal to */
-    {
-        if (block1type < block2type) return 1;
-        // else if (block1type > block2type) return 0;
-        else if (Block2->time_stamp )
-    }
-    else /* Block1 larger than */
-    {
-        return 0;
-    }
-}
+//     if (direction == 0) /* Block1 smaller than or equal to */
+//     {
+//         if (block1type < block2type) return 1;
+//         // else if (block1type > block2type) return 0;
+//         else if (Block2->time_stamp )
+//     }
+//     else /* Block1 larger than */
+//     {
+//         return 0;
+//     }
+// }
 
 /* TODO: find better solution than copied recursive quicksort */
 static void quicksort(MLVReader_block_info_t * Blocks, int first, int last)
