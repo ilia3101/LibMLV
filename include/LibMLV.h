@@ -37,7 +37,4 @@ typedef void MLVWriter_t;
 /* Functions for bit packing/unpacking and compressing */
 #include "MLVFrameUtils.h"
 
-/* Type for storing where a block is (file index and position) */
-#include "MLVFileLocation.h"
-
 #endif

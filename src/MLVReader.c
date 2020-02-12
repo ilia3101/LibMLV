@@ -30,7 +30,6 @@
 typedef struct MLVReader MLVReader_t;
 #include "../include/MLVReader.h"
 #include "../include/mlv_structs.h"
-#include "../include/MLVFileLocation.h"
 
 #define MLVReader_string "MLVReader 0.1"
 
@@ -45,15 +44,18 @@ struct \
     /* uint8_t exists; */ /* Was this block found in a file */ \
     /* uint16_t empty_space; */ \
     uint32_t num_blocks; /* How many of this block was found */ \
-    MLVFileLocation_t file_location; /* Location of the FIRST instance of this block */ \
+    /* File index and location of the first occurence of this block */ \
+    uint8_t file_index; \
+    uint64_t file_location; \
 } BlockName;
 
 /* This structure has some unused bytes */
 typedef struct
 {
     uint8_t block_type[4]; /* Block name string */
-    uint32_t size; /* Size of block. TODO: make this structure 32 bytes again */
-    MLVFileLocation_t file_location; /* File location of block */
+    uint32_t size; /* Size of block */
+    uint8_t file_index; /* Which file the block is in */
+    uint64_t file_location; /* Location of the block in file */
     uint64_t time_stamp;
 
     union
@@ -348,8 +350,8 @@ static size_t init_mlv_reader( MLVReader_t * Reader, size_t ReaderSize,
             memcpy(block->block_type, h.header.blockType, 4);
             block->time_stamp = h.header.timestamp;
             block->size = h.header.blockSize;
-            MLVFileLocationSetFileIndex(block->file_location, Reader->file_index);
-            MLVFileLocationSetPosition(block->file_location, Reader->file_pos);
+            block->file_index = Reader->file_index;
+            block->file_location = Reader->file_pos;
 
             if (memcmp(h.header.blockType, "AUDF", 4) == 0)
             {
@@ -552,9 +554,9 @@ int64_t MLVReaderGetBlockDataFromFiles( MLVReader_t * Reader, FILE ** Files,
         {
             if (blocks_found == BlockIndex)
             {
-                fseek(Files[MLVFileLocationGetFileIndex(block->file_location)], MLVFileLocationGetPosition(block->file_location), SEEK_SET);
+                fseek(Files[block->file_index], block->file_location, SEEK_SET);
                 read_size = (MaxBytes < block->size) ? MaxBytes : block->size;
-                fread(Out, read_size, 1, Files[MLVFileLocationGetFileIndex(block->file_location)]);
+                fread(Out, read_size, 1, Files[block->file_index]);
                 return 0;
             }
             else
