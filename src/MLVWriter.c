@@ -39,7 +39,7 @@ struct \
     int write; /* Should this block be written? */ \
 } BlockName;
 
-typedef struct MLVWriter
+struct MLVWriter
 {
     /* Header blocks */
     MLVWriter_header_block(mlv_file_hdr_t, MLVI)

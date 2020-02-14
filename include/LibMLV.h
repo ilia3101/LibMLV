@@ -25,8 +25,8 @@
 #ifndef _LibMLV_
 #define _LibMLV_
 
-/* Library user does not see the actual types, this is forces binary
- * compatibility in dynamic linking. You can still look at the code. */
+/* Library user does not see the actual types, this is to strongly encourage
+ * binary compatibility in dynamic linking (you can still look at the code) */
 
 /* The best parts */
 #include "MLVReader.h"
@@ -34,5 +34,9 @@
 
 /* Functions for bit packing/unpacking and compressing */
 #include "MLVFrameUtils.h"
+
+/* MLV file block structures */
+#include <stdint.h>
+#include "mlv_structs.h"
 
 #endif

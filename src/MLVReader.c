@@ -75,7 +75,7 @@ typedef struct
 
 int fghjkl = sizeof(MLVReader_block_info_t);
 
-typedef struct MLVReader
+struct MLVReader
 {
     char string[16];
 
