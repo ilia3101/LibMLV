@@ -1,7 +1,7 @@
 CC=CL
 FLAGS=/c /Ox
 
-main: MLVWriter MLVReader MLVFrameUtils
+main: MLVWriter MLVReader MLVFrameUtils MLVDataSource
 	LIB lib/*.obj /OUT:lib/libmlv.lib
 	LINK /DLL lib/*.obj /OUT:lib/libmlv.dll
 
@@ -13,3 +13,6 @@ MLVReader:
 
 MLVFrameUtils:
 	$(CC) src/MLVFrameUtils.c $(FLAGS) /Fo:lib/MLVFrameUtils.obj
+
+MLVDataSource:
+	$(CC) src/MLVDataSource.c $(FLAGS) /Fo:lib/MLVDataSource.obj

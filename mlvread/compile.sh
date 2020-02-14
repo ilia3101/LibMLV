@@ -1,4 +1,3 @@
-gcc -c -O3 mlvread.c
-gcc -c -O3 ../src/MLVReader.c
+gcc -c -O3 mlvread.c -Wall -Wextra
 
-gcc *.o -o mlvplay
+gcc ../lib/*.o *.o -o mlvplay

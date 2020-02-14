@@ -66,26 +66,48 @@ void printMlvInfo(MLVReader_t * video)
     printf("     Bits / Pixel: %i\n\n", MLVReaderGetBitdepth(video));
 }
 
+/* THIS MAIN FUNCTION IS LIKE A LibMLV MLVREADER TUTORAL */
 int main(int argc, char ** argv)
 {
-    FILE * mlv_files[argc-1];
-    
-    for (int f = 1; f < argc; ++f)
-    {
-        mlv_files[f-1] = fopen(argv[f], "r");
-        if (mlv_files[f-1] == NULL) printf("Failed to open file %s\n", argv[f]);
-        puts(argv[f]);
+    /***************************** Open all FILEs *****************************/
+
+    int num_files = argc-1;
+    FILE ** mlv_files = malloc(num_files * sizeof(FILE *));
+
+    for (int f = 0; f < num_files; ++f) {
+        mlv_files[f] = fopen(argv[f+1], "r");
+        if (mlv_files[f] == NULL) printf("Failed to open file %s\n", argv[f+1]);
+        puts(argv[f+1]);
     }
 
+    /***************** Create MLVDataSource with all the files ****************/
+
+    MLVDataSource_t * datasource = malloc(sizeof_MLVDataSource(MLVDataSource_TYPE_FILE, num_files));
+
+    /* Initialise the mlvdatasource, giving it file handles and fread/fseek/ftell functions to use */
+    init_MLVDataSourceWithFiles( datasource,
+                                 mlv_files,
+                                 num_files,
+                                 fread, /* Pass function pointers for file */
+                                 fseek,
+                                 ftell,
+                                 SEEK_SET, /* Pass values for SEEK_SET and SEEK_END */
+                                 SEEK_END );
+
+    /************************ MLVReader initialisation ************************/
+
+    /* Create MLVReader, starting by allocating 22 bytes of memory (this is too little of course) */
     size_t allocated_size = 22;
     MLVReader_t * reader = malloc(allocated_size);
 
     size_t return_val = allocated_size;
 
+    /* Keep reallocating until we have the right amount of memory for mlvreader */
     do {
         reader = realloc(reader, return_val);
         allocated_size = return_val;
-        return_val = init_MLVReaderFromFILEs(reader, allocated_size, mlv_files, argc-1, 0);
+        // return_val = init_MLVReaderFromFILEs(reader, allocated_size, mlv_files, argc-1, 0);
+        return_val = init_MLVReader(reader, allocated_size, datasource, 0);
         printf("Allocated = %i, requested = %i\n", allocated_size, return_val);
     } while (return_val != allocated_size);
 
@@ -109,10 +131,13 @@ int main(int argc, char ** argv)
         frame_bmp[i * 3] = frameoutput;
     }
 
-    for (int f = 1; f < argc; ++f)
-    {
-        fclose(mlv_files[f-1]);
-    }
+    uninit_MLVReader(reader);
+
+
+    /**************************** FREE EVERYTHING *****************************/
+
+    for (int f = 1; f < argc; ++f) fclose(mlv_files[f-1]);
+    free(mlv_files);
 
     return 0;
 }

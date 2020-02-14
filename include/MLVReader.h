@@ -6,6 +6,8 @@
 
 #include "mlv_structs.h"
 
+#include "MLVDataSource.h"
+
 typedef struct MLVReader MLVReader_t;
 
 /*********************************** ERRORS ***********************************/
@@ -41,6 +43,11 @@ int64_t init_MLVReaderFromMemory( MLVReader_t * Reader,
                                   int NumFiles,
                                   int MaxFrames );
 
+int64_t init_MLVReader( MLVReader_t * Reader,
+                        size_t ReaderSize,
+                        MLVDataSource_t * DataSource,
+                        int MaxFrames );
+
 /* Uninitialise MLVReader */
 void uninit_MLVReader(MLVReader_t * Reader);
 
@@ -49,29 +56,19 @@ void uninit_MLVReader(MLVReader_t * Reader);
 /* Get block data for block of BlockType, BlockIndex = 0 to get first
  * instance of that block, 1 to get second, etc. MaxBytes argument is maximum
  * number of bytes to read. Positive return value is number of bytes read. */
-int64_t MLVReaderGetBlockDataFromFiles( MLVReader_t * Reader, FILE ** Files,
-                                        char * BlockType, int BlockIndex,
-                                        size_t MaxBytes, void * Out );
-int64_t MLVReaderGetBlockDataFromMemory( MLVReader_t * Reader, void ** Files,
-                                         char * BlockType, int BlockIndex, 
-                                         size_t MaxBytes, void * Out );
+int64_t MLVReaderGetBlockData( MLVReader_t * Reader,
+                               MLVDataSource_t * DataSource,
+                               char * BlockType, int BlockIndex,
+                               size_t MaxBytes, void * Out );
 
 /* Returns memory needed for using next function (void * DecodingMemory) */
 size_t MLVReaderGetFrameDecodingMemorySize(MLVReader_t * Reader);
 
-/* Gets an undebayered frame from MLV file */
-void MLVReaderGetFrameFromFile( MLVReader_t * Reader,
-                                FILE ** Files,
-                                void * DecodingMemory,
-                                uint64_t FrameIndex,
-                                uint16_t * FrameOutput );
-
-/* Gets undebayered frame from MLV in memory */
-void MLVReaderGetFrameFromMemory( MLVReader_t * Reader,
-                                  void ** Files,
-                                  void * DecodingMemory,
-                                  uint64_t FrameIndex,
-                                  uint16_t * FrameOutput );
+/* Gets an undebayered, unprocessed frame */
+void MLVReaderGetFrame( MLVReader_t * Reader,
+                        FILE ** Files,
+                        void * DecodingMemory,
+                        MLVDataSource_t * DataSource );
 
 /****************************** Metadata getters ******************************/
 
