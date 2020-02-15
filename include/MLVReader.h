@@ -66,9 +66,10 @@ size_t MLVReaderGetFrameDecodingMemorySize(MLVReader_t * Reader);
 
 /* Gets an undebayered, unprocessed frame */
 void MLVReaderGetFrame( MLVReader_t * Reader,
-                        FILE ** Files,
+                        uint64_t FrameIndex,
+                        MLVDataSource_t * DataSource,
                         void * DecodingMemory,
-                        MLVDataSource_t * DataSource );
+                        void * Out );
 
 /****************************** Metadata getters ******************************/
 

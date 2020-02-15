@@ -73,8 +73,6 @@ typedef struct
     };
 } MLVReader_block_info_t;
 
-int fghjkl = sizeof(MLVReader_block_info_t);
-
 struct MLVReader
 {
     char string[16];
@@ -261,7 +259,7 @@ static size_t init_mlv_reader( MLVReader_t * Reader, size_t ReaderSize,
         /* Print block (unless its null or vidf) */
         if (memcmp(h.header.blockType, "NULL", 4) && memcmp(h.header.blockType, "VIDF", 4))
         {
-            printf("%llu Block '%.4s' ", h.header.timestamp, (char *)h.header.blockType);
+            printf("%lu Block '%.4s' ", h.header.timestamp, (char *)h.header.blockType);
             print_size(h.header.blockSize);
         }
 
@@ -391,6 +389,7 @@ int64_t init_MLVReader( MLVReader_t * Reader,
 void uninit_MLVReader(MLVReader_t * Reader)
 {
     /* Nothing to do as usual */
+    Reader = Reader;
     return;
 }
 
@@ -484,11 +483,14 @@ size_t MLVReaderGetFrameDecodingMemorySize(MLVReader_t * MLVReader)
 
 /* Gets an undebayered frame from MLV file */
 void MLVReaderGetFrame( MLVReader_t * Reader,
-                        FILE ** Files,
+                        uint64_t FrameIndex,
+                        MLVDataSource_t * DataSource,
                         void * DecodingMemory,
-                        MLVDataSource_t * DataSource )
+                        void * Out )
 {
-    MLVReader_block_info_t * frames = Reader->blocks;
+    // MLVReader_block_info_t * frames = Reader->blocks;
+
+    int bytes_read = MLVReaderGetBlockData(Reader, DataSource, "VIDF", FrameIndex, Reader->biggest_video_frame, DecodingMemory);
 
     return;
 }
@@ -602,6 +604,6 @@ void MLVReaderPrintAllBlocks(MLVReader_t * Reader)
 {
     for (uint64_t i = 0; i < Reader->num_blocks; ++i)
     {
-        printf("%i: %.4s\n", i, Reader->blocks+i);
+        printf("%lu: %.4s\n", i, Reader->blocks[i].block_type);
     }
 }

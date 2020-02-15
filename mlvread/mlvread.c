@@ -119,7 +119,11 @@ int main(int argc, char ** argv)
 
     uint16_t * frameoutput = malloc(num_pixels * sizeof(uint16_t));
 
-    MLVReaderGetFrameFromFile(reader, mlv_files, malloc(1024*1024*100)/* 100MiB */, 0, frameoutput);
+    MLVReaderGetFrame( reader,
+                       0,
+                       datasource,
+                       malloc(1024*1024*100)/* 100MiB */,
+                       frameoutput );
 
     uint8_t * frame_bmp = malloc(num_pixels * sizeof(uint8_t) * 3);
 

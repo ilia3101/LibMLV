@@ -65,7 +65,6 @@ struct MLVWriter
 /* Sets string and block size */
 #define mlv_init_block(Block, String) \
 { \
-    char * block_name = String; \
     mlv_hdr_t * mlv_block = (mlv_hdr_t *)&Block; \
     for (int i = 0; i < 4; ++i) mlv_block->blockType[i] = String[i]; \
     mlv_block->blockSize = sizeof(Block); \
@@ -93,7 +92,7 @@ void init_MLVWriter( MLVWriter_t * Writer,
                      int FPSDenominator )
 {
     /* Zerro everything */
-    for (int i = 0; i < sizeof(MLVWriter_t); ++i) ((uint8_t *)Writer)[i] = 0;
+    for (uint64_t i = 0; i < sizeof(MLVWriter_t); ++i) ((uint8_t *)Writer)[i] = 0;
 
     /* Set correct strings and block sizes in all mlv block headers */
     mlv_init_block(Writer->MLVI.block, "MLVI");

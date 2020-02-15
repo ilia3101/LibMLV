@@ -1,5 +1,5 @@
 CC=gcc
-FLAGS=-c -fPIC -O3
+FLAGS=-c -fPIC -O3 -Wall -Wextra
 
 main: MLVWriter MLVReader MLVFrameUtils MLVDataSource
 	ar rcs lib/libmlv.a lib/*.o
