@@ -27,6 +27,8 @@
 #include <string.h>
 #include <stddef.h>
 
+#include "liblj92/lj92.h"
+
 #include "../include/MLVReader.h"
 #include "../include/mlv_structs.h"
 
@@ -72,8 +74,6 @@ typedef struct
         } expo;
     };
 } MLVReader_block_info_t;
-
-int fghjkl = sizeof(MLVReader_block_info_t);
 
 struct MLVReader
 {
@@ -203,7 +203,6 @@ static void quicksort(MLVReader_block_info_t * Blocks, int first, int last)
 
 static void MLVReader_sort_blocks(MLVReader_t * Reader)
 {
-    // MLVReaderPrintAllBlocks(Reader);
     quicksort(Reader->blocks, 0, Reader->num_blocks-1);
 }
 
@@ -322,6 +321,10 @@ static size_t init_mlv_reader( MLVReader_t * Reader, size_t ReaderSize,
                 block->frame.offset = ((mlv_vidf_hdr_t *)h.block_data)->frameSpace;
                 block->frame.size = h.header.blockSize - (sizeof(mlv_vidf_hdr_t) + block->frame.offset);
                 Reader->total_frame_data += h.header.timestamp;
+
+                /* Record size of biggest frame block */
+                if (h.header.blockSize > Reader->biggest_video_frame)
+                    Reader->biggest_video_frame = h.header.blockSize;
             }
             else if (memcmp(h.header.blockType, "EXPO", 4) == 0)
             {
@@ -351,7 +354,7 @@ static size_t init_mlv_reader( MLVReader_t * Reader, size_t ReaderSize,
         /* Estimate memory required for whole MLV to be read */
         uint64_t total_file_size = 0;
         for (int f = 0; f < MLVDataSourceGetNumFiles(DataSource); ++f)
-            total_file_size += MLVDataSourceGetFileSize(DataSource, Reader->file_index);
+            total_file_size += MLVDataSourceGetFileSize(DataSource, f);
 
         uint64_t average_frame_size = 100;
         if (Reader->total_frame_data != 0)
@@ -476,19 +479,59 @@ int64_t MLVReaderGetBlockData( MLVReader_t * Reader,
 }
 
 /* Returns memory needed for using next two functions (void * DecodingMemory) */
-size_t MLVReaderGetFrameDecodingMemorySize(MLVReader_t * MLVReader)
+size_t MLVReaderGetFrameDecodingMemorySize(MLVReader_t * Reader, MLVDataSource_t * DataSource)
 {
-    /* TODO: fix this */
-    return 1000;
+    // switch (MLVDataSourceGetType(DataSource))
+    // {
+    //     case MLVDataSource_TYPE_MEMORY:
+    //         return 100;
+    //         break;
+
+    //     case MLVDataSource_TYPE_FILE:
+    //         return Reader->biggest_video_frame + 100;
+    //         break;
+    // }
+
+    return Reader->biggest_video_frame+100;
 }
 
-/* Gets an undebayered frame from MLV file */
 void MLVReaderGetFrame( MLVReader_t * Reader,
-                        FILE ** Files,
+                        MLVDataSource_t * DataSource,
+                        uint64_t FrameIndex,
                         void * DecodingMemory,
-                        MLVDataSource_t * DataSource )
+                        uint16_t * Out )
 {
-    MLVReader_block_info_t * frames = Reader->blocks;
+    MLVReader_block_info_t * frame_block = Reader->blocks + FrameIndex;
+
+    // uint8_t * block_data = DecodingMemory/* MLVDataSourceGetDataPointer(DataSource, frame_block->file_index, frame_block->file_location) */;
+
+    // if (block_data == NULL) {
+    //     block_data = DecodingMemory;
+    // }
+
+    MLVDataSourceGetData( DataSource,
+                          frame_block->file_index,
+                          frame_block->file_location,
+                          frame_block->size, DecodingMemory );
+
+    uint64_t frame_offset = ((mlv_vidf_hdr_t *)DecodingMemory)->frameSpace + sizeof(mlv_vidf_hdr_t);
+
+    printf("%.04s\n", (char *)DecodingMemory);
+
+    /* TODO: remove constant allocation of lj92 object here (and remove malloc from it) */
+    if (Reader->MLVI.block.videoClass & MLV_VIDEO_CLASS_FLAG_LJ92) /* I don't like this */
+    {
+        lj92 decoder_object;
+
+        /* Apparently the decompression algorithm returns these how nice! */
+        int bitdepth=14, width=3840, height=1536, components = 1;
+        lj92_open( &decoder_object, ((uint8_t *)DecodingMemory)+frame_offset,
+                   frame_block->size-frame_offset, &width, &height, &bitdepth,
+                   &components );
+        int retval = lj92_decode(decoder_object, Out, 1, 0, NULL, 0);
+        // if (retval == LJ92_ERROR_NONE) puts("no error");
+        lj92_close(decoder_object);
+    }
 
     return;
 }

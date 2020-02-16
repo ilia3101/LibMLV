@@ -2,6 +2,7 @@
 #include <stdint.h>
 #include <stdlib.h>
 #include <ctype.h>
+#include <math.h>
 
 /* For mmap */
 #include <unistd.h>
@@ -17,7 +18,7 @@ void writebmp(unsigned char * data, int width, int height, char * filename) {
     *((unsigned int *)(header+1)) = 26 + imagesize-((4-(width*3%4))%4);
     FILE * file = fopen(filename, "wb");
     fwrite(header, 1, 26, file);
-    for (y = 0; y < height; ++y) fwrite(data+(y*width*3), rowbytes, 1, file);
+    for (y = height-1; y >= 0; --y) fwrite(data+(y*width*3), rowbytes, 1, file);
     fwrite(data, width*3, 1, file);
     fclose(file);
 }
@@ -119,25 +120,36 @@ int main(int argc, char ** argv)
 
     uint16_t * frameoutput = malloc(num_pixels * sizeof(uint16_t));
 
-    MLVReaderGetFrameFromFile(reader, mlv_files, malloc(1024*1024*100)/* 100MiB */, 0, frameoutput);
+    void * decoding_memory = malloc(MLVReaderGetFrameDecodingMemorySize(reader, datasource));
+
+    MLVReaderGetFrame( reader,
+                       datasource, /* Data source */
+                       1, /* Frame Index */
+                       decoding_memory, /* Decoding memory */
+                       frameoutput /* Output pointer */ );
 
     uint8_t * frame_bmp = malloc(num_pixels * sizeof(uint8_t) * 3);
-
     int black = MLVReaderGetBlackLevel(reader);
-    int white = MLVReaderGetWhiteLevel(reader)-black;
+    float white = MLVReaderGetWhiteLevel(reader)-black;
     for (int i = 0; i < num_pixels; ++i)
     {
-        int value = ((frameoutput[i]-black)*255)/white;
-        frame_bmp[i * 3] = frameoutput;
+        int value = powf( ((float)(frameoutput[i]-black)/white), 0.46) *255.0;
+        frame_bmp[i * 3] = value;
+        frame_bmp[i*3+1] = value;
+        frame_bmp[i*3+2] = value;
     }
 
-    uninit_MLVReader(reader);
+    writebmp(frame_bmp, MLVReaderGetFrameWidth(reader), MLVReaderGetFrameHeight(reader), "test.bmp");
 
+    uninit_MLVReader(reader);
+    uninit_MLVDataSource(datasource);
 
     /**************************** FREE EVERYTHING *****************************/
 
     for (int f = 1; f < argc; ++f) fclose(mlv_files[f-1]);
     free(mlv_files);
+    free(reader);
+    free(datasource);
 
     return 0;
 }
