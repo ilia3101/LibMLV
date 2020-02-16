@@ -30,18 +30,6 @@ typedef struct MLVReader MLVReader_t;
  * need to call it again, if it returns a larger value, you must reallocate
  * the memory to be that much and call it again, keep repeating if necessary.
  * Any negative return value is an error. */
-int64_t init_MLVReaderFromFILEs( MLVReader_t * Reader,
-                                 size_t ReaderSize, /* How many bytes Reader is */
-                                 FILE ** Files, /* Will read from these files */
-                                 int NumFiles,
-                                 int MaxFrames );
-
-int64_t init_MLVReaderFromMemory( MLVReader_t * Reader,
-                                  size_t ReaderSize,
-                                  void ** Files, /* File(s) in memory */
-                                  uint64_t * FileSizes, /* Size of each file */
-                                  int NumFiles,
-                                  int MaxFrames );
 
 int64_t init_MLVReader( MLVReader_t * Reader,
                         size_t ReaderSize,
