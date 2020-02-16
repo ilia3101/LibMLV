@@ -1,6 +1,6 @@
 CC=gcc
 FLAGS=-c -std=c99 -fPIC -O3 -Wall -Wextra
-OBJ_FOLDER=lib/objects
+OBJ_FOLDER=lib
 
 main: MLVWriter MLVReader MLVFrameUtils MLVDataSource
 	ar rcs lib/libmlv.a $(OBJ_FOLDER)/*.o

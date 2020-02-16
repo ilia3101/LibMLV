@@ -1,6 +1,6 @@
 CC=CL
 FLAGS=/c /Ox
-OBJ_FOLDER=lib/objects
+OBJ_FOLDER=lib
 
 main: MLVWriter MLVReader MLVFrameUtils MLVDataSource
 	LIB $(OBJFOLDER)/*.obj /OUT:lib/libmlv.lib
