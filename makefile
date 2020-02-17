@@ -1,21 +1,23 @@
 CC=gcc
-FLAGS=-c -fPIC -O3
+CFLAGS=-c -fPIC -O3 -std=c99
+NAME=libmlv
+OBJ_FOLDER=lib
 
 main: MLVWriter.o MLVReader.o MLVFrameUtils.o MLVDataSource.o lj92.o
-	ar rcs lib/libmlv.a lib/*.o
-	$(CC) -shared lib/*.o -o lib/libmlv.so
+	ar rcs $(OBJ_FOLDER)/$(NAME).a $(OBJ_FOLDER)/*.o
+	$(CC) -shared $(OBJ_FOLDER)/*.o -o $(OBJ_FOLDER)/$(NAME).so
 
-MLVWriter.o:
-	$(CC) src/MLVWriter.c $(FLAGS) -o lib/MLVWriter.o
+MLVWriter.o: src/MLVWriter.c include/MLVWriter.h src/liblj92/lj92.h
+	$(CC) $(CFLAGS) src/MLVWriter.c -o $(OBJ_FOLDER)/MLVWriter.o
 
-MLVReader.o:
-	$(CC) src/MLVReader.c $(FLAGS) -o lib/MLVReader.o
+MLVReader.o: src/MLVReader.c include/MLVReader.h src/liblj92/lj92.h
+	$(CC) $(CFLAGS) src/MLVReader.c -o $(OBJ_FOLDER)/MLVReader.o
 
-MLVFrameUtils.o:
-	$(CC) src/MLVFrameUtils.c $(FLAGS) -o lib/MLVFrameUtils.o
+MLVFrameUtils.o: src/MLVFrameUtils.c include/MLVFrameUtils.h
+	$(CC) $(CFLAGS) src/MLVFrameUtils.c -o $(OBJ_FOLDER)/MLVFrameUtils.o
 
-MLVDataSource.o:
-	$(CC) src/MLVDataSource.c $(FLAGS) -o lib/MLVDataSource.o
+MLVDataSource.o: src/MLVDataSource.c include/MLVDataSource.h
+	$(CC) $(CFLAGS) src/MLVDataSource.c -o $(OBJ_FOLDER)/MLVDataSource.o
 
-lj92.o:
-	$(CC) src/liblj92/lj92.c $(FLAGS) -o lib/lj92.o
+lj92.o: src/liblj92/lj92.c src/liblj92/lj92.h
+	$(CC) $(CFLAGS) src/liblj92/lj92.c -o $(OBJ_FOLDER)/lj92.o
