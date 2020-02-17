@@ -21,3 +21,6 @@ MLVDataSource.obj: src/MLVDataSource.c include/MLVDataSource.h
 
 lj92.obj: src/liblj92/lj92.c src/liblj92/lj92.h
 	$(CC) $(CFLAGS) src/liblj92/lj92.c /Fo:$(OBJ_FOLDER)/lj92.obj
+
+clean:
+	DEL $(OBJ_FOLDER)/MLVWriter.obj $(OBJ_FOLDER)/MLVReader.obj $(OBJ_FOLDER)/MLVFrameUtils.obj $(OBJ_FOLDER)/MLVDataSource.obj $(OBJ_FOLDER)/lj92.obj $(OBJ_FOLDER)/$(NAME).*

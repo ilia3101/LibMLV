@@ -15,7 +15,7 @@ char * source_files[][10] =
 
 #define NUM_SOURCE_FILES (sizeof(source_files)/sizeof(source_files[0]))
 
-void write_rules(FILE * makefile, char * ObjectFileExtension, char * CompilerOutSetting, char * MainRule)
+void write_rules(FILE * makefile, char * ObjectFileExtension, char * CompilerOutSetting, char * rm_Command, char * MainRule)
 {
     char object_names[NUM_SOURCE_FILES][100];
 
@@ -49,6 +49,11 @@ void write_rules(FILE * makefile, char * ObjectFileExtension, char * CompilerOut
         fprintf(makefile,"\n\t$(CC) $(CFLAGS) %s %s$(OBJ_FOLDER)/%s",
                 source_files[i][0], CompilerOutSetting, object_names[i]);
     }
+
+    /* Clean rule */
+    fprintf(makefile, "\n\nclean:\n\t%s", rm_Command);
+    for (int i = 0; i < NUM_SOURCE_FILES; ++i) fprintf(makefile, " $(OBJ_FOLDER)/%s", object_names[i]);
+    fprintf(makefile, " $(OBJ_FOLDER)/$(NAME).*");
 }
 
 int main()
@@ -61,7 +66,7 @@ int main()
         "NAME="RESULT_NAME"\n"
         "OBJ_FOLDER="OBJECT_FOLDER"\n\n"
     );
-    write_rules(makefile, ".o", "-o ",
+    write_rules(makefile, ".o", "-o ", "rm",
 	"\tar rcs $(OBJ_FOLDER)/$(NAME).a $(OBJ_FOLDER)/*.o\n"
 	"\t$(CC) -shared $(OBJ_FOLDER)/*.o -o $(OBJ_FOLDER)/$(NAME).so");
     fclose(makefile);
@@ -75,7 +80,7 @@ int main()
         "NAME="RESULT_NAME"\n"
         "OBJ_FOLDER="OBJECT_FOLDER"\n\n"
     );
-    write_rules(makefile, ".obj", "/Fo:",
+    write_rules(makefile, ".obj", "/Fo:", "DEL",
 	"\tLIB $(OBJFOLDER)/*.obj /OUT:$(OBJ_FOLDER)/$(NAME).lib\n"
 	"\tLINK /DLL $(OBJ_FOLDER)/*.obj /OUT:$(OBJ_FOLDER)/$(NAME).dll");
     fclose(makefile);
