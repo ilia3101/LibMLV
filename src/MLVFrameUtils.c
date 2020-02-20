@@ -100,7 +100,8 @@ void MLVPackFrame10(uint16_t * Data, uint32_t Elements, void * Out)
 
 void MLVUnpackFrame14(uint16_t * Data, uint32_t Elements, uint16_t * Out)
 {
-    for (uint32_t i = 0; i < Elements; i += 8)
+    uint16_t * out_end = Out + Elements;
+    for (;Out < out_end; Out += 8)
     {
         uint16_t word_a = Data[0];
         uint16_t word_b = Data[1];
@@ -119,13 +120,14 @@ void MLVUnpackFrame14(uint16_t * Data, uint32_t Elements, uint16_t * Out)
         Out[6] = ((word_f <<  2) | (word_g >> 14)) & 0x3FFF;
         Out[7] = word_g & 0x3FFF;
 
-        Data += 7, Out += 8;
+        Data += 7;
     }
 }
 
 void MLVUnpackFrame12(uint16_t * Data, uint32_t Elements, uint16_t * Out)
 {
-    for (uint32_t i = 0; i < Elements; i += 4)
+    uint16_t * out_end = Out + Elements;
+    for (;Out < out_end; Out += 4)
     {
         uint16_t word_a = Data[0];
         uint16_t word_b = Data[1];
@@ -136,14 +138,14 @@ void MLVUnpackFrame12(uint16_t * Data, uint32_t Elements, uint16_t * Out)
         Out[2] = ((word_b << 4) | (word_b >> 12)) & 0x0FFF;
         Out[3] = word_c & 0x0FFF;
 
-        Data += 3, Out += 4;
+        Data += 3;
     }
 }
 
 void MLVUnpackFrame10(uint16_t * Data, uint32_t Elements, uint16_t * Out)
 {
-    uint16_t * output = Out;
-    for (int i = 0; i < Elements; i += 8)
+    uint16_t * out_end = Out + Elements;
+    for (;Out < out_end; Out += 8)
     {
         uint16_t word_a = Data[0];
         uint16_t word_b = Data[1];
@@ -160,7 +162,7 @@ void MLVUnpackFrame10(uint16_t * Data, uint32_t Elements, uint16_t * Out)
         Out[6] = ((word_d << 6) | (word_e >> 10)) & 0x03FF;
         Out[7] = word_e & 0x03FF;
 
-        Data += 5, Out += 8;
+        Data += 5;
     }
 }
 
