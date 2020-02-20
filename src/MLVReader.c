@@ -1,4 +1,4 @@
-/* 
+/*
  * MIT License
  *
  * Copyright (C) 2019 Ilia Sibiryakov
@@ -9,10 +9,10 @@
  * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
  * copies of the Software, and to permit persons to whom the Software is
  * furnished to do so, subject to the following conditions:
- * 
+ *
  * The above copyright notice and this permission notice shall be included in
  * all copies or substantial portions of the Software.
- * 
+ *
  * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
  * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
  * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
@@ -31,6 +31,7 @@
 
 #include "../include/MLVReader.h"
 #include "../include/mlv_structs.h"
+#include "../include/MLVFrameUtils.h"
 
 #define MLVReader_string "MLVReader 0.1"
 
@@ -531,6 +532,25 @@ void MLVReaderGetFrame( MLVReader_t * Reader,
         int retval = lj92_decode(decoder_object, Out, 1, 0, NULL, 0);
         // if (retval == LJ92_ERROR_NONE) puts("no error");
         lj92_close(decoder_object);
+    }
+    else
+    {
+        uint32_t elements = MLVReaderGetFrameWidth(Reader) * MLVReaderGetFrameHeight(Reader);
+        switch (MLVReaderGetBitdepth(Reader))
+        {
+            case 14:
+                MLVUnpackFrame14(((uint8_t *)DecodingMemory)+frame_offset, elements, Out);
+                break;
+            case 12:
+                MLVUnpackFrame12(((uint8_t *)DecodingMemory)+frame_offset, elements, Out);
+                break;
+            case 10:
+                MLVUnpackFrame10(((uint8_t *)DecodingMemory)+frame_offset, elements, Out);
+                break;
+            default:
+                /* TODO: return ERROR!!!! */
+                break;
+        }
     }
 
     return;
