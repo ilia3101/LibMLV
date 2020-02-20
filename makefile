@@ -7,7 +7,7 @@ main: MLVWriter.o MLVReader.o MLVFrameUtils.o MLVDataSource.o lj92.o
 	ar rcs $(OBJ_FOLDER)/$(NAME).a $(OBJ_FOLDER)/*.o
 	$(CC) -shared $(OBJ_FOLDER)/*.o -o $(OBJ_FOLDER)/$(NAME).so
 
-MLVWriter.o: src/MLVWriter.c include/MLVWriter.h src/liblj92/lj92.h
+MLVWriter.o: src/MLVWriter.c include/MLVWriter.h src/liblj92/lj92.h include/MLVFrameUtils.h
 	$(CC) $(CFLAGS) src/MLVWriter.c -o $(OBJ_FOLDER)/MLVWriter.o
 
 MLVReader.o: src/MLVReader.c include/MLVReader.h src/liblj92/lj92.h

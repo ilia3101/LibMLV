@@ -7,7 +7,7 @@ main: MLVWriter.obj MLVReader.obj MLVFrameUtils.obj MLVDataSource.obj lj92.obj
 	LIB $(OBJFOLDER)/*.obj /OUT:$(OBJ_FOLDER)/$(NAME).lib
 	LINK /DLL $(OBJ_FOLDER)/*.obj /OUT:$(OBJ_FOLDER)/$(NAME).dll
 
-MLVWriter.obj: src/MLVWriter.c include/MLVWriter.h src/liblj92/lj92.h
+MLVWriter.obj: src/MLVWriter.c include/MLVWriter.h src/liblj92/lj92.h include/MLVFrameUtils.h
 	$(CC) $(CFLAGS) src/MLVWriter.c /Fo:$(OBJ_FOLDER)/MLVWriter.obj
 
 MLVReader.obj: src/MLVReader.c include/MLVReader.h src/liblj92/lj92.h

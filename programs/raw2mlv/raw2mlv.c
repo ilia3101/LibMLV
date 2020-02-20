@@ -39,7 +39,7 @@
 #define WIN32
 #endif
 
-#include "../include/LibMLV.h"
+#include "../../include/LibMLV.h"
 
 /* Camid, for getting model ID for magic lantern cameras */
 #include "camid.c"

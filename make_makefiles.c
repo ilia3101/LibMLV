@@ -6,7 +6,7 @@
 
 char * source_files[][10] =
 {
-    {"src/MLVWriter.c",      "include/MLVWriter.h", "src/liblj92/lj92.h", NULL},
+    {"src/MLVWriter.c",      "include/MLVWriter.h", "src/liblj92/lj92.h", "include/MLVFrameUtils.h", NULL},
     {"src/MLVReader.c",      "include/MLVReader.h", "src/liblj92/lj92.h", NULL},
     {"src/MLVFrameUtils.c",  "include/MLVFrameUtils.h", NULL},
     {"src/MLVDataSource.c",  "include/MLVDataSource.h", NULL},

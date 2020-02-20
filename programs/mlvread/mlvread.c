@@ -10,7 +10,7 @@
 #include <sys/mman.h>
 #include <string.h>
 
-#include "../include/LibMLV.h"
+#include "../../include/LibMLV.h"
 
 void writebmp(unsigned char * data, int width, int height, char * filename) {
     int rowbytes = width*3+(4-(width*3%4))%4, imagesize = rowbytes*height, y;
@@ -124,7 +124,7 @@ int main(int argc, char ** argv)
 
     MLVReaderGetFrame( reader,
                        datasource, /* Data source */
-                       1, /* Frame Index */
+                       0, /* Frame Index */
                        decoding_memory, /* Decoding memory */
                        frameoutput /* Output pointer */ );
 
@@ -133,7 +133,7 @@ int main(int argc, char ** argv)
     float white = MLVReaderGetWhiteLevel(reader)-black;
     for (int i = 0; i < num_pixels; ++i)
     {
-        int value = powf( ((float)(frameoutput[i]-black)/white), 0.46) *255.0;
+        int value = powf(((float)(frameoutput[i]-black)/white), 0.46) *255.0;
         frame_bmp[i * 3] = value;
         frame_bmp[i*3+1] = value;
         frame_bmp[i*3+2] = value;
