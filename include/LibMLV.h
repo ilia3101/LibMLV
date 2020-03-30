@@ -35,4 +35,8 @@
 /* Functions for bit packing/unpacking and compressing */
 #include "MLVFrameUtils.h"
 
+/* MLV file block structures */
+#include <stdint.h>
+#include "mlv_structs.h"
+
 #endif
