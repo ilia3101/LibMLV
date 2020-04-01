@@ -9,9 +9,9 @@ raw2mlv.obj: camera_matrices.c read_raw.c
 	$(CC) $(FLAGS) raw2mlv.c
 
 LibMLV:
-	cd ../
+	cd ../../
 	$(MAKE) /F makefile.msvc
-	cd raw2mlv
+	cd programs/raw2mlv
 
 GetLibRAW:
 !IF !EXISTS(libraw.dll)
