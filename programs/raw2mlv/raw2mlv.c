@@ -70,36 +70,38 @@ void print_help()
 " pic1.raw pic2.raw pic3.raw -o myvid.mlv --bitdepth 12\n");
 }
 
+int limit_multiple_of_8(int value)
+{
+    if ((value % 8) == 0) return value;
+    else return value - (value % 8);
+}
+
 void do_binning(uint16_t * unbinned_image, uint16_t * binned_image, int binning_x, int binning_y, int width, int height)
 {
-    int diff_x = binning_x / 2 + 1;
-    int diff_y = binning_y / 2 + 1;
     if (binning_x == 1 && binning_y == 1)
         memcpy(binned_image, unbinned_image, width*height*sizeof(uint16_t));
     else {
         int divide_by = binning_x * binning_y;
-        for (int y = 0; y < height/binning_y-1; ++y)
+        int output_height = height/binning_y;
+        int output_width = limit_multiple_of_8(width/binning_x);
+        for (int y = 0, y_src = 0; y < output_height; ++y, y_src += binning_y)
         {
-            int y_loc = binning_y/2 + 1 + y * binning_y;
-            for (int x = 0; x < width/binning_x-1; ++x)
+            for (int x = 0, x_src = 0; x < output_width; ++x, x_src += binning_x)
             {
-                int x_loc = binning_x/2 + 1 + x * binning_x;
+                uint32_t pixel_value = 0;
 
-                int pixel_value = 0;
-
-                for (int y2 = y_loc-diff_y; y2 < y_loc+diff_y; y2 += 2)
+                for (int y2 = 0; y2 < binning_y; ++y2)
                 {
-                    for (int x2 = x_loc-diff_x; x2 < x_loc+diff_x; x2 += 2)
+                    for (int x2 = 0; x2 < binning_x; ++x2)
                     {
-                        pixel_value += unbinned_image[y_loc * width + x2];
+                        pixel_value += unbinned_image[(y_src+y2*2) * width + x_src + x2*2];
                     }
                 }
 
                 pixel_value /= divide_by;
 
-                binned_image[y * (width/binning_x) + x] = pixel_value;
+                binned_image[y * output_width + x] = pixel_value;
             }
-    printf("hello, y = %i\n", y);
         }
     }
 }
@@ -155,8 +157,8 @@ int main(int argc, char ** argv)
             i += 2;
         } else if (!strcmp(argv[i], "--binning")) { /* Secret bonus option */
             binning = atoi(argv[i+1]);
-            if (binning != 3 && binning != 1 && binning != 5) binning = 1;
-            else printf("Binning set to %i\n", binning);
+            /* if (binning != 3 && binning != 1 && binning != 5) binning = 1;
+            else */ printf("Binning set to %i\n", binning);
             ++i;
         } else {
             input_files[num_input_files++] = argv[i];
@@ -193,7 +195,7 @@ int main(int argc, char ** argv)
 
             /*************************** Set values ***************************/
 
-            width = RawGetWidth(raw) / binning;
+            width = limit_multiple_of_8(RawGetWidth(raw) / binning);
             height = RawGetHeight(raw) / binning;
 
             packed_frame_data = malloc((width * height * output_bits) / 8);
@@ -235,7 +237,7 @@ int main(int argc, char ** argv)
         else
         {
             /* Make sure everything is right */
-            if ( RawGetWidth(raw)/binning != width
+            if ( limit_multiple_of_8(RawGetWidth(raw)/binning) != width
              || RawGetHeight(raw)/binning != height)
             {
                 printf("File %s has different resolution!\n", input_files[f]);
