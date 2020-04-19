@@ -13,7 +13,7 @@ raw2mlv.o: camera_matrices.c read_raw.c
 	$(CC) $(FLAGS) raw2mlv.c
 
 LibMLV:
-	$(MAKE) -C ../
+	$(MAKE) -C ../../
 
 libraw_r.a:
 	./getlibraw.sh
