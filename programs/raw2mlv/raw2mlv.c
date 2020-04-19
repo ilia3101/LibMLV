@@ -103,6 +103,7 @@ void do_binning(uint16_t * unbinned_image, uint16_t * binned_image, int binning_
 
 int main(int argc, char ** argv)
 {
+    puts("hello!!!!");
     /* Output parameters */
     char * output_name = "output.mlv";
     int num_input_files = 0;
