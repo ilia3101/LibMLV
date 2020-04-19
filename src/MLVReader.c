@@ -1,4 +1,4 @@
-/* 
+/*
  * MIT License
  *
  * Copyright (C) 2019 Ilia Sibiryakov
@@ -9,10 +9,10 @@
  * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
  * copies of the Software, and to permit persons to whom the Software is
  * furnished to do so, subject to the following conditions:
- * 
+ *
  * The above copyright notice and this permission notice shall be included in
  * all copies or substantial portions of the Software.
- * 
+ *
  * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
  * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
  * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
@@ -27,8 +27,11 @@
 #include <string.h>
 #include <stddef.h>
 
+#include "liblj92/lj92.h"
+
 #include "../include/MLVReader.h"
 #include "../include/mlv_structs.h"
+#include "../include/MLVFrameUtils.h"
 
 #define MLVReader_string "MLVReader 0.1"
 
@@ -73,9 +76,7 @@ typedef struct
     };
 } MLVReader_block_info_t;
 
-int fghjkl = sizeof(MLVReader_block_info_t);
-
-typedef struct MLVReader
+struct MLVReader
 {
     char string[16];
 
@@ -117,43 +118,6 @@ typedef struct MLVReader
 
 };
 
-/***** Wrapper for memory or a FILE, so they can be treated the same way ******/
-typedef struct {
-    int file_or_memory; /* 0 = file, 1 = memory */
-    uint64_t size;
-    union {
-        uint8_t * mem;
-        FILE * file;
-    };
-} mlvfile_t;
-static void init_mlv_file_from_FILE(mlvfile_t * File, FILE * FileObject)
-{
-    File->file_or_memory = 0;
-    File->file = FileObject;
-    fseek(FileObject, 0, SEEK_END);
-    File->size = ftell(FileObject);
-}
-static void init_mlv_file_from_mem(mlvfile_t * File, void * Mem, size_t Size)
-{
-    File->file_or_memory = 1;
-    File->size = Size;
-    File->mem = Mem;
-}
-static void uninit_mlv_file(mlvfile_t * File)
-{
-    return; /* Nothing to do (yet) */
-}
-static void mlv_file_get_data(mlvfile_t*F,uint64_t Pos,uint64_t Size,void*Out)
-{
-    if (F->file_or_memory == 1) memcpy(Out, F->mem + Pos, Size);
-    else { fseek(F->file, Pos, SEEK_SET); fread(Out, 1, Size, F->file); }
-}
-static uint64_t mlv_file_get_size(mlvfile_t * File)
-{
-    return File->size;
-}
-/******************************************************************************/
-
 static void print_size(uint64_t Size)
 {
     if (Size < 1024)
@@ -165,7 +129,6 @@ static void print_size(uint64_t Size)
     else
         printf("%.2f GiB\n", ((float)Size)/((float)(1024*1024*1024)));
 }
-
 
 /* Value for quicksort (so it gets sorted in correct order) */
 /* Order: video frames, audio frames, EXPOs, misc blocks... */
@@ -241,15 +204,13 @@ static void quicksort(MLVReader_block_info_t * Blocks, int first, int last)
 
 static void MLVReader_sort_blocks(MLVReader_t * Reader)
 {
-    // MLVReaderPrintAllBlocks(Reader);
     quicksort(Reader->blocks, 0, Reader->num_blocks-1);
 }
 
 /* TODO: this function is pretty great, but could be made even cleaner
  * IDEA: create a separate object/function for mapping blocks of an MLV file */
 static size_t init_mlv_reader( MLVReader_t * Reader, size_t ReaderSize,
-                               mlvfile_t * File, int NumFiles,
-                               int MaxFrames )
+                               MLVDataSource_t * DataSource, int MaxFrames )
 {
     /* TODO: FIX THIS */
     if (MaxFrames == 0) MaxFrames = INT32_MAX;
@@ -274,12 +235,12 @@ static size_t init_mlv_reader( MLVReader_t * Reader, size_t ReaderSize,
     MLVReader_block_info_t * block = Reader->blocks; /* Output to here */
 
     /* File state */
-    uint64_t current_file_size = mlv_file_get_size(File);
+    uint64_t current_file_size = MLVDataSourceGetFileSize(DataSource, Reader->file_index);
 
     /* While max blocks is not filled */
     while ( Reader->file_pos < current_file_size
          && Reader->num_blocks < max_blocks
-         && Reader->file_index < NumFiles
+         && Reader->file_index < MLVDataSourceGetNumFiles(DataSource)
          && Reader->num_video_frames < MaxFrames
          && !Reader->finished_parsing )
     {
@@ -290,9 +251,7 @@ static size_t init_mlv_reader( MLVReader_t * Reader, size_t ReaderSize,
         } h;
 
         int read_bytes = (BLOCK_DATA_MAX < current_file_size-Reader->file_pos) ? BLOCK_DATA_MAX : current_file_size-Reader->file_pos;
-        mlv_file_get_data(File+Reader->file_index, Reader->file_pos, read_bytes, h.block_data);
-
-        // printf("---- %.4s, %i\n", &h.header, h.header.blockSize);
+        MLVDataSourceGetData(DataSource, Reader->file_index, Reader->file_pos, read_bytes, h.block_data);
 
         /* Check if the file ends before block or if block is too small */
         if ((Reader->file_pos+h.header.blockSize) > current_file_size || h.header.blockSize < 16) {
@@ -320,10 +279,10 @@ static size_t init_mlv_reader( MLVReader_t * Reader, size_t ReaderSize,
                 /* Store first instance of each block */ \
                 if (Reader->BlockType.num_blocks == 0) \
                 { \
-                    mlv_file_get_data( File+Reader->file_index, \
-                                       Reader->file_pos, \
-                                       sizeof(Reader->BlockType.block), \
-                                       &Reader->BlockType.block ); \
+                    MLVDataSourceGetData( DataSource, Reader->file_index, \
+                                          Reader->file_pos, \
+                                          sizeof(Reader->BlockType.block), \
+                                          &Reader->BlockType.block ); \
                 } \
                 Reader->BlockType.num_blocks++; \
             } \
@@ -363,6 +322,10 @@ static size_t init_mlv_reader( MLVReader_t * Reader, size_t ReaderSize,
                 block->frame.offset = ((mlv_vidf_hdr_t *)h.block_data)->frameSpace;
                 block->frame.size = h.header.blockSize - (sizeof(mlv_vidf_hdr_t) + block->frame.offset);
                 Reader->total_frame_data += h.header.timestamp;
+
+                /* Record size of biggest frame block */
+                if (h.header.blockSize > Reader->biggest_video_frame)
+                    Reader->biggest_video_frame = h.header.blockSize;
             }
             else if (memcmp(h.header.blockType, "EXPO", 4) == 0)
             {
@@ -377,22 +340,22 @@ static size_t init_mlv_reader( MLVReader_t * Reader, size_t ReaderSize,
         ++block;
 
         /* Go to next file if reached end, unless its last file anyway */
-        if (Reader->file_pos >= current_file_size && Reader->file_index != (NumFiles-1))
+        if (Reader->file_pos >= current_file_size && Reader->file_index != (MLVDataSourceGetNumFiles(DataSource)-1))
         {
             ++Reader->file_index;
             Reader->file_pos = 0;
-            current_file_size = mlv_file_get_size(File+Reader->file_index);
+            current_file_size = MLVDataSourceGetFileSize(DataSource, Reader->file_index);
             printf("video frames: %i\n\n", Reader->num_video_frames);
         }
     }
 
     /* If not scanned through all files, we need more memory */
-    if (!Reader->finished_parsing && (Reader->file_pos < current_file_size || Reader->file_index != (NumFiles-1)))
+    if (!Reader->finished_parsing && (Reader->file_pos < current_file_size || Reader->file_index != (MLVDataSourceGetNumFiles(DataSource)-1)))
     {
         /* Estimate memory required for whole MLV to be read */
         uint64_t total_file_size = 0;
-        for (int f = 0; f < NumFiles; ++f)
-            total_file_size += mlv_file_get_size(File+Reader->file_index);
+        for (int f = 0; f < MLVDataSourceGetNumFiles(DataSource); ++f)
+            total_file_size += MLVDataSourceGetFileSize(DataSource, f);
 
         uint64_t average_frame_size = 100;
         if (Reader->total_frame_data != 0)
@@ -406,7 +369,7 @@ static size_t init_mlv_reader( MLVReader_t * Reader, size_t ReaderSize,
         }
 
         /* An estimate: 10 misc blocks per file */
-        return ReaderSize + (average_frame_size*total_file_size + 20 + 10*NumFiles) * sizeof(MLVReader_block_info_t);
+        return ReaderSize + (average_frame_size*total_file_size + 20 + 10*MLVDataSourceGetNumFiles(DataSource)) * sizeof(MLVReader_block_info_t);
     }
     else
     {
@@ -418,71 +381,15 @@ static size_t init_mlv_reader( MLVReader_t * Reader, size_t ReaderSize,
     }
 }
 
-/* Initialise MLV reader from FILEs */
-int64_t init_MLVReaderFromFILEs( MLVReader_t * Reader,
-                                 size_t ReaderSize,
-                                 FILE ** Files,
-                                 int NumFiles,
-                                 int MaxFrames )
+int64_t init_MLVReader( MLVReader_t * Reader,
+                        size_t ReaderSize,
+                        MLVDataSource_t * DataSource,
+                        int MaxFrames )
 {
-    if (NumFiles > 101) return MLVReader_ERROR_BAD_INPUT;
-    if (NumFiles <= 0) return MLVReader_ERROR_BAD_INPUT;
     if (Reader == NULL) return MLVReader_ERROR_BAD_INPUT;
-    if (Files == NULL) return MLVReader_ERROR_BAD_INPUT;
-    for (int f = 0; f < NumFiles; ++f) {
-        if (Files[f] == NULL) return MLVReader_ERROR_BAD_INPUT;
-    }
+    if (DataSource == NULL) return MLVReader_ERROR_BAD_INPUT;
 
-    mlvfile_t mlv_files[101];
-
-    for (int f = 0; f < NumFiles; ++f) {
-        init_mlv_file_from_FILE(mlv_files+f, Files[f]);
-    }
-
-    int64_t return_value = init_mlv_reader( Reader, ReaderSize,
-                                            mlv_files, NumFiles, MaxFrames );
-
-    for (int f = 0; f < NumFiles; ++f) {
-        uninit_mlv_file(mlv_files+f);
-    }
-
-    return return_value;
-}
-
-/* Initialise MLV reader from memory */
-int64_t init_MLVReaderFromMemory( MLVReader_t * Reader,
-                                  size_t ReaderSize,
-                                  void ** Files,
-                                  uint64_t * FileSizes,
-                                  int NumFiles,
-                                  int MaxFrames )
-{
-    if (NumFiles > 101) return MLVReader_ERROR_BAD_INPUT;
-    if (NumFiles <= 0) return MLVReader_ERROR_BAD_INPUT;
-    if (Reader == NULL) return MLVReader_ERROR_BAD_INPUT;
-    if (Files == NULL) return MLVReader_ERROR_BAD_INPUT;
-    if (FileSizes == NULL) return MLVReader_ERROR_BAD_INPUT;
-    for (int f = 0; f < NumFiles; ++f) {
-        /* 10TB seems like a reasonable file size limit */
-        if (FileSizes[f] > (1024UL*1024*1024*10)) return MLVReader_ERROR_BAD_INPUT;
-        if (Files[f] == NULL) return MLVReader_ERROR_BAD_INPUT;
-    }
-
-    /* Max is 101 file parts? One .MLV + up to a hundred .M00-.M99 */
-    mlvfile_t mlv_files[101];
-
-    for (int f = 0; f < NumFiles; ++f) {
-        init_mlv_file_from_mem(mlv_files+f, Files[f], FileSizes[f]);
-    }
-
-    size_t return_value = init_mlv_reader( Reader, ReaderSize,
-                                           mlv_files, NumFiles, MaxFrames );
-
-    for (int f = 0; f < NumFiles; ++f) {
-        uninit_mlv_file(mlv_files+f);
-    }
-
-    return return_value;
+    return init_mlv_reader(Reader, ReaderSize, DataSource, MaxFrames);
 }
 
 void uninit_MLVReader(MLVReader_t * Reader)
@@ -538,12 +445,14 @@ int32_t MLVReaderGetNumBlocksOfType(MLVReader_t * Reader, char * BlockType)
     return block_count;
 }
 
-int64_t MLVReaderGetBlockDataFromFiles( MLVReader_t * Reader, FILE ** Files,
-                                        char * BlockType, int BlockIndex,
-                                        size_t MaxBytes, void * Out )
+int64_t MLVReaderGetBlockData( MLVReader_t * Reader,
+                               MLVDataSource_t * DataSource,
+                               char * BlockType, int BlockIndex,
+                               size_t MaxBytes, void * Out )
 {
     uint64_t blocks_found = 0;
     uint64_t read_size = 0;
+    uint64_t actually_read = 0; /* How mnuch actually got read */
 
     for (int b = 0; b < Reader->num_misc_blocks; ++b)
     {
@@ -553,10 +462,12 @@ int64_t MLVReaderGetBlockDataFromFiles( MLVReader_t * Reader, FILE ** Files,
         {
             if (blocks_found == BlockIndex)
             {
-                fseek(Files[block->file_index], block->file_location, SEEK_SET);
                 read_size = (MaxBytes < block->size) ? MaxBytes : block->size;
-                fread(Out, read_size, 1, Files[block->file_index]);
-                return 0;
+                actually_read = MLVDataSourceGetData( DataSource,
+                                                      block->file_index,
+                                                      block->file_location,
+                                                      read_size, Out );
+                return actually_read;
             }
             else
             {
@@ -565,39 +476,85 @@ int64_t MLVReaderGetBlockDataFromFiles( MLVReader_t * Reader, FILE ** Files,
         }
     }
 
-    return read_size;
+    return 0;
 }
-
-int64_t MLVReaderGetBlockDataFromMemory( MLVReader_t * Reader, void ** Files,
-                                         char * BlockType, int BlockIndex, 
-                                         size_t MaxBytes, void * Out );
 
 /* Returns memory needed for using next two functions (void * DecodingMemory) */
-size_t MLVReaderGetFrameDecodingMemorySize(MLVReader_t * MLVReader)
+size_t MLVReaderGetFrameDecodingMemorySize(MLVReader_t * Reader, MLVDataSource_t * DataSource)
 {
-    return 1000;
+    // switch (MLVDataSourceGetType(DataSource))
+    // {
+    //     case MLVDataSource_TYPE_MEMORY:
+    //         return 100;
+    //         break;
+
+    //     case MLVDataSource_TYPE_FILE:
+    //         return Reader->biggest_video_frame + 100;
+    //         break;
+    // }
+
+    return Reader->biggest_video_frame+100;
 }
 
-/* Gets an undebayered frame from MLV file */
-void MLVReaderGetFrameFromFile( MLVReader_t * Reader,
-                                FILE ** Files,
-                                void * DecodingMemory,
-                                uint64_t FrameIndex,
-                                uint16_t * FrameOutput )
+void MLVReaderGetFrame( MLVReader_t * Reader,
+                        MLVDataSource_t * DataSource,
+                        uint64_t FrameIndex,
+                        void * DecodingMemory,
+                        uint16_t * Out )
 {
-    MLVReader_block_info_t * frames = Reader->blocks;
+    MLVReader_block_info_t * frame_block = Reader->blocks + FrameIndex;
 
-    // fread()
+    // uint8_t * block_data = DecodingMemory/* MLVDataSourceGetDataPointer(DataSource, frame_block->file_index, frame_block->file_location) */;
+
+    // if (block_data == NULL) {
+    //     block_data = DecodingMemory;
+    // }
+
+    MLVDataSourceGetData( DataSource,
+                          frame_block->file_index,
+                          frame_block->file_location,
+                          frame_block->size, DecodingMemory );
+
+    uint64_t frame_offset = ((mlv_vidf_hdr_t *)DecodingMemory)->frameSpace + sizeof(mlv_vidf_hdr_t);
+
+    printf("%.04s\n", (char *)DecodingMemory);
+
+    /* TODO: remove constant allocation of lj92 object here (and remove malloc from it) */
+    if (Reader->MLVI.block.videoClass & MLV_VIDEO_CLASS_FLAG_LJ92) /* I don't like this */
+    {
+        lj92 decoder_object;
+
+        /* Apparently the decompression algorithm returns these how nice! */
+        int bitdepth=14, width=3840, height=1536, components = 1;
+        lj92_open( &decoder_object, ((uint8_t *)DecodingMemory)+frame_offset,
+                   frame_block->size-frame_offset, &width, &height, &bitdepth,
+                   &components );
+        int retval = lj92_decode(decoder_object, Out, 1, 0, NULL, 0);
+        // if (retval == LJ92_ERROR_NONE) puts("no error");
+        lj92_close(decoder_object);
+    }
+    else
+    {
+        uint32_t elements = MLVReaderGetFrameWidth(Reader) * MLVReaderGetFrameHeight(Reader);
+        switch (MLVReaderGetBitdepth(Reader))
+        {
+            case 14:
+                MLVUnpackFrame14(((uint8_t *)DecodingMemory)+frame_offset, elements, Out);
+                break;
+            case 12:
+                MLVUnpackFrame12(((uint8_t *)DecodingMemory)+frame_offset, elements, Out);
+                break;
+            case 10:
+                MLVUnpackFrame10(((uint8_t *)DecodingMemory)+frame_offset, elements, Out);
+                break;
+            default:
+                /* TODO: return ERROR!!!! */
+                break;
+        }
+    }
 
     return;
 }
-
-/* Gets undebayered frame from MLV in memory */
-void MLVReaderGetFrameFromMemory( MLVReader_t * Reader,
-                                  void ** Files,
-                                  void * DecodingMemory,
-                                  uint64_t FrameIndex,
-                                  uint16_t * FrameOutput );
 
 /****************************** Metadata getters ******************************/
 

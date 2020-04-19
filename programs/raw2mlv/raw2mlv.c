@@ -33,13 +33,14 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <math.h>
+#include <string.h>
 
 /* Thank You Microsoft, Very Cool! */
 #ifdef _WIN32
 #define WIN32
 #endif
 
-#include "../include/LibMLV.h"
+#include "../../include/LibMLV.h"
 
 /* Camid, for getting model ID for magic lantern cameras */
 #include "camid.c"
@@ -69,6 +70,37 @@ void print_help()
 " pic1.raw pic2.raw pic3.raw -o myvid.mlv --bitdepth 12\n");
 }
 
+void do_binning(uint16_t * unbinned_image, uint16_t * binned_image, int binning_x, int binning_y, int width, int height)
+{
+    if (binning_x == 1 && binning_y == 1)
+        memcpy(binned_image, unbinned_image, width*height*sizeof(uint16_t));
+    else {
+        int divide_by = binning_x * binning_y;
+        for (int y = 0; y < height/binning_y; ++y)
+        {
+            int y_loc = binning_y/2 + 1 + y * binning_y;
+            for (int x = 0; x < width/binning_x; ++x)
+            {
+                int x_loc = binning_x/2 + 1 + x * binning_x;
+
+                int pixel_value = 0;
+
+                for (int y2 = 0; y2 < y_loc - 2 * (binning_y/2); ++y2)
+                {
+                    for (int x2 = 0; x2 < x_loc - 2 * (binning_x/2); ++x2)
+                    {
+                        pixel_value += 1;
+                    }
+                }
+
+                pixel_value /= divide_by;
+
+                binned_image[y_loc * (width/binning_x) + x_loc] = pixel_value;
+            }
+        }
+    }
+}
+
 int main(int argc, char ** argv)
 {
     /* Output parameters */
@@ -81,6 +113,7 @@ int main(int argc, char ** argv)
     int height = 0;
     int output_fps_top = 24000;
     int output_fps_bottom = 1001;
+    int binning = 1;
 
     /* Source data info */
     int source_bitdepth = 14; /* Will be figured out later */
@@ -117,6 +150,11 @@ int main(int argc, char ** argv)
             output_fps_bottom = atoi(argv[i+2]);
             printf("FPS set to %.3f\n",(float)output_fps_top/output_fps_bottom);
             i += 2;
+        } else if (!strcmp(argv[i], "--binning")) { /* Secret bonus option */
+            binning = atoi(argv[i+1]);
+            if (binning != 3 && binning != 1 && binning != 5) binning = 1;
+            else printf("Binning set to %i\n", binning);
+            ++i;
         } else {
             input_files[num_input_files++] = argv[i];
         }
@@ -152,8 +190,8 @@ int main(int argc, char ** argv)
 
             /*************************** Set values ***************************/
 
-            width = RawGetWidth(raw);
-            height = RawGetHeight(raw);
+            width = RawGetWidth(raw) / binning;
+            height = RawGetHeight(raw) / binning;
 
             packed_frame_data = malloc((width * height * output_bits) / 8);
 
@@ -194,8 +232,8 @@ int main(int argc, char ** argv)
         else
         {
             /* Make sure everything is right */
-            if ( RawGetWidth(raw) != width
-             || RawGetHeight(raw) != height)
+            if ( RawGetWidth(raw)/binning != width
+             || RawGetHeight(raw)/binning != height)
             {
                 printf("File %s has different resolution!\n", input_files[f]);
             }
@@ -221,7 +259,11 @@ int main(int argc, char ** argv)
         free(frame_header_data);
 
         /* Now write actual frame data */
-        uint16_t * bayerimage = RawGetImageData(raw);
+        uint16_t * unbinned_image = RawGetImageData(raw);
+
+        uint16_t * bayerimage = malloc(width * height * sizeof(uint16_t));
+
+        do_binning(unbinned_image, bayerimage, binning, binning, RawGetWidth(raw), RawGetHeight(raw));
 
         if (output_bits < source_bitdepth)
             for (int i = 0; i < width*height; ++i) bayerimage[i] >>= shift_bits;

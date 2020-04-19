@@ -28,6 +28,9 @@
 /* Library user does not see the actual types, this is to strongly encourage
  * binary compatibility in dynamic linking (you can still look at the code) */
 
+/* Wraps any kind of file or memory so that MLVReader can use it */
+#include "MLVDataSource.h"
+
 /* The best parts */
 #include "MLVReader.h"
 #include "MLVWriter.h"

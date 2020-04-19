@@ -6,20 +6,22 @@
 
 #include "mlv_structs.h"
 
+#include "MLVDataSource.h"
+
 typedef struct MLVReader MLVReader_t;
 
 /*********************************** ERRORS ***********************************/
 
-/* Error bits, invert returned values to get these codes */
-#define MLVReader_ERROR_FILE_IO                     0x0001
-#define MLVReader_ERROR_UNSUPPORTED_IMAGE_FORMAT    0x0002
-#define MLVReader_ERROR_UNSUPPORTED_AUDIO_FORMAT    0x0004
-#define MLVReader_ERROR_SKIPPED_FRAME               0x0008
-#define MLVReader_ERROR_CORRUPTED_FRAME             0x0010
-#define MLVReader_ERROR_CORRUPTED_METADATA          0x0020
-#define MLVReader_ERROR_DATA_NOT_AVAILABLE          0x0040
-#define MLVReader_ERROR_BAD_INPUT                   0x0080
-#define MLVReader_ERROR_DROPPED_FRAME               0x0100
+/* Error codes for MLVReader */
+#define MLVReader_ERROR_FILE_IO                     -1
+#define MLVReader_ERROR_UNSUPPORTED_IMAGE_FORMAT    -2
+#define MLVReader_ERROR_UNSUPPORTED_AUDIO_FORMAT    -3
+#define MLVReader_ERROR_SKIPPED_FRAME               -4
+#define MLVReader_ERROR_CORRUPTED_FRAME             -5
+#define MLVReader_ERROR_CORRUPTED_DATA              -6
+#define MLVReader_ERROR_DATA_NOT_AVAILABLE          -7
+#define MLVReader_ERROR_BAD_INPUT                   -8
+#define MLVReader_ERROR_DROPPED_FRAME               -9
 
 /******************************* Initialisation *******************************/
 
@@ -41,6 +43,11 @@ int64_t init_MLVReaderFromMemory( MLVReader_t * Reader,
                                   int NumFiles,
                                   int MaxFrames );
 
+int64_t init_MLVReader( MLVReader_t * Reader,
+                        size_t ReaderSize,
+                        MLVDataSource_t * DataSource,
+                        int MaxFrames );
+
 /* Uninitialise MLVReader */
 void uninit_MLVReader(MLVReader_t * Reader);
 
@@ -49,29 +56,21 @@ void uninit_MLVReader(MLVReader_t * Reader);
 /* Get block data for block of BlockType, BlockIndex = 0 to get first
  * instance of that block, 1 to get second, etc. MaxBytes argument is maximum
  * number of bytes to read. Positive return value is number of bytes read. */
-int64_t MLVReaderGetBlockDataFromFiles( MLVReader_t * Reader, FILE ** Files,
-                                        char * BlockType, int BlockIndex,
-                                        size_t MaxBytes, void * Out );
-int64_t MLVReaderGetBlockDataFromMemory( MLVReader_t * Reader, void ** Files,
-                                         char * BlockType, int BlockIndex, 
-                                         size_t MaxBytes, void * Out );
+int64_t MLVReaderGetBlockData( MLVReader_t * Reader,
+                               MLVDataSource_t * DataSource,
+                               char * BlockType, int BlockIndex,
+                               size_t MaxBytes, void * Out );
 
 /* Returns memory needed for using next function (void * DecodingMemory) */
-size_t MLVReaderGetFrameDecodingMemorySize(MLVReader_t * Reader);
+size_t MLVReaderGetFrameDecodingMemorySize( MLVReader_t * MLVReader,
+                                            MLVDataSource_t * DataSource );
 
-/* Gets an undebayered frame from MLV file */
-void MLVReaderGetFrameFromFile( MLVReader_t * Reader,
-                                FILE ** Files,
-                                void * DecodingMemory,
-                                uint64_t FrameIndex,
-                                uint16_t * FrameOutput );
-
-/* Gets undebayered frame from MLV in memory */
-void MLVReaderGetFrameFromMemory( MLVReader_t * Reader,
-                                  void ** Files,
-                                  void * DecodingMemory,
-                                  uint64_t FrameIndex,
-                                  uint16_t * FrameOutput );
+/* Gets an undebayered, unprocessed frame */
+void MLVReaderGetFrame( MLVReader_t * Reader,
+                        MLVDataSource_t * DataSource,
+                        uint64_t FrameIndex,
+                        void * DecodingMemory,
+                        uint16_t * Out );
 
 /****************************** Metadata getters ******************************/
 

@@ -1,4 +1,4 @@
-/* 
+/*
  * MIT License
  *
  * Copyright (C) 2019 Ilia Sibiryakov
@@ -9,10 +9,10 @@
  * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
  * copies of the Software, and to permit persons to whom the Software is
  * furnished to do so, subject to the following conditions:
- * 
+ *
  * The above copyright notice and this permission notice shall be included in
  * all copies or substantial portions of the Software.
- * 
+ *
  * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
  * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
  * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
@@ -29,9 +29,14 @@
 
 /* Packing fucntions for 14, 12 and 10 bit, output memory size should be
  * bitdepth/16 the original size */
-void MLVPackFrame14(uint16_t * Data, size_t Elements, void * Out);
-void MLVPackFrame12(uint16_t * Data, size_t Elements, void * Out);
-void MLVPackFrame10(uint16_t * Data, size_t Elements, void * Out);
+void MLVPackFrame14(uint16_t * Data, uint32_t Elements, void * Out);
+void MLVPackFrame12(uint16_t * Data, uint32_t Elements, void * Out);
+void MLVPackFrame10(uint16_t * Data, uint32_t Elements, void * Out);
+
+/* Unpacking */
+void MLVUnpackFrame14(uint16_t * Data, uint32_t Elements, uint16_t * Out);
+void MLVUnpackFrame12(uint16_t * Data, uint32_t Elements, uint16_t * Out);
+void MLVUnpackFrame10(uint16_t * Data, uint32_t Elements, uint16_t * Out);
 
 /* Compress LJ92, Out memory should be same size as data, resulting compressed
  * size is returned to ResultSize */
