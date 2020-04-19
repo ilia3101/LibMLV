@@ -72,38 +72,40 @@ void print_help()
 
 void do_binning(uint16_t * unbinned_image, uint16_t * binned_image, int binning_x, int binning_y, int width, int height)
 {
+    int diff_x = binning_x / 2 + 1;
+    int diff_y = binning_y / 2 + 1;
     if (binning_x == 1 && binning_y == 1)
         memcpy(binned_image, unbinned_image, width*height*sizeof(uint16_t));
     else {
         int divide_by = binning_x * binning_y;
-        for (int y = 0; y < height/binning_y; ++y)
+        for (int y = 0; y < height/binning_y-1; ++y)
         {
             int y_loc = binning_y/2 + 1 + y * binning_y;
-            for (int x = 0; x < width/binning_x; ++x)
+            for (int x = 0; x < width/binning_x-1; ++x)
             {
                 int x_loc = binning_x/2 + 1 + x * binning_x;
 
                 int pixel_value = 0;
 
-                for (int y2 = 0; y2 < y_loc - 2 * (binning_y/2); ++y2)
+                for (int y2 = y_loc-diff_y; y2 < y_loc+diff_y; y2 += 2)
                 {
-                    for (int x2 = 0; x2 < x_loc - 2 * (binning_x/2); ++x2)
+                    for (int x2 = x_loc-diff_x; x2 < x_loc+diff_x; x2 += 2)
                     {
-                        pixel_value += 1;
+                        pixel_value += unbinned_image[y_loc * width + x2];
                     }
                 }
 
                 pixel_value /= divide_by;
 
-                binned_image[y_loc * (width/binning_x) + x_loc] = pixel_value;
+                binned_image[y * (width/binning_x) + x] = pixel_value;
             }
+    printf("hello, y = %i\n", y);
         }
     }
 }
 
 int main(int argc, char ** argv)
 {
-    puts("hello!!!!");
     /* Output parameters */
     char * output_name = "output.mlv";
     int num_input_files = 0;
