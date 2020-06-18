@@ -105,6 +105,16 @@ uint16_t * RawGetImageData(RawReader_t * Raw)
     return Raw->libraw->rawdata.raw_image;
 }
 
+int RawGetMaxPixelValue(RawReader_t * Raw)
+{
+    int max = 0;
+    for (int i = 0; i < Raw->width * Raw->height; ++i)
+    {
+        if (Raw->libraw->rawdata.raw_image[i] > max) max = Raw->libraw->rawdata.raw_image[i];
+    }
+    retrurn max;
+}
+
 int RawGetBlackLevel(RawReader_t * Raw)
 {
     return Raw->libraw->rawdata.color.black;

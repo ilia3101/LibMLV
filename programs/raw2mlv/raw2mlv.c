@@ -186,7 +186,7 @@ int main(int argc, char ** argv)
         if (f == 0)
         {
             /* Round bitdepth up to a multiple of 2 */
-            source_bitdepth = (int)ceil(log2(RawGetWhiteLevel(raw))/2) * 2;
+            source_bitdepth = (int)ceil(log2(RawGetMaxPixelValue(raw))/2) * 2;
             shift_bits = source_bitdepth - output_bits;
             if (shift_bits < 0) shift_bits = -shift_bits;
             float lscale = pow(2.0, output_bits - source_bitdepth);
