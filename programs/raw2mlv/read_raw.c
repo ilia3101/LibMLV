@@ -112,7 +112,7 @@ int RawGetMaxPixelValue(RawReader_t * Raw)
     {
         if (Raw->libraw->rawdata.raw_image[i] > max) max = Raw->libraw->rawdata.raw_image[i];
     }
-    retrurn max;
+    return max;
 }
 
 int RawGetBlackLevel(RawReader_t * Raw)
