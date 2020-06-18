@@ -52,6 +52,28 @@ int init_RawReader(RawReader_t * Raw, char * File)
     int height = libraw_get_iheight(libraw);
     int raw_width = libraw_get_raw_width(libraw);
 
+    /* Make sure bayer pattern starts at red to improve mlv support */
+    #define START_AT_RED
+    #ifdef START_AT_RED
+    int top_pixel = libraw_COLOR(libraw, 0, 0);
+    switch (top_pixel) {
+        case 1:
+            crop_left += 1;
+            width -= 1;
+            break;
+        case 3:
+            crop_top += 1;
+            height -= 1;
+            break;
+        case 2:
+            crop_top += 1;
+            height -= 1;
+            crop_left += 1;
+            width -= 1;
+            break;
+    }
+    #endif
+
     /* HACK - memmove the image rows to remove the margins.
      * Not a great solution, as we are modifying inside libraw's memory */
 
