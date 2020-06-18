@@ -112,7 +112,7 @@ int main(int argc, char ** argv)
     char * output_name = "output.mlv";
     int num_input_files = 0;
     char ** input_files = malloc(argc * sizeof(char *));
-    int output_bits = 14;
+    int output_bits = 0;
     int output_compression = 0;
     int width = 0;
     int height = 0;
@@ -133,7 +133,7 @@ int main(int argc, char ** argv)
         if (!strcmp(argv[i], "-h") || !strcmp(argv[i], "--help")) {
             print_help();
             exit(0);
-        } else if (!strcmp(argv[i], "-b")) {
+        } else if (!strcmp(argv[i], "-b") || !strcmp(argv[i], "--bitdepth")) {
             output_bits = atoi(argv[i+1]);
             printf("Bitdepth set to %i\n", output_bits);
             if ((output_bits % 2) != 0 || output_bits>16 || output_bits<10) {
@@ -187,6 +187,8 @@ int main(int argc, char ** argv)
         {
             /* Round bitdepth up to a multiple of 2 */
             source_bitdepth = (int)ceil(log2(RawGetMaxPixelValue(raw))/2) * 2;
+            /* Set output bitdepth to be same as input if user has not specified anything */
+            if (output_bits == 0) output_bits = source_bitdepth;
             shift_bits = source_bitdepth - output_bits;
             if (shift_bits < 0) shift_bits = -shift_bits;
             float lscale = pow(2.0, output_bits - source_bitdepth);
