@@ -186,7 +186,8 @@ int main(int argc, char ** argv)
         if (f == 0)
         {
             /* Round bitdepth up to a multiple of 2 */
-            source_bitdepth = (int)ceil(log2(RawGetMaxPixelValue(raw))/2) * 2;
+            #define MAX(a,b) (((a)>(b))?(a):(b))
+            source_bitdepth = (int)ceil(log2(MAX(RawGetMaxPixelValue(raw), RawGetWhiteLevel(raw)))/2) * 2;
             /* Set output bitdepth to be same as input if user has not specified anything */
             if (output_bits == 0) output_bits = source_bitdepth;
             shift_bits = source_bitdepth - output_bits;
