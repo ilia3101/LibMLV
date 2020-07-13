@@ -727,6 +727,23 @@ typedef struct _lje {
     int huffsym[18];
 } lje;
 
+#if defined(__GNUC__)
+#define count_leading_zeros(x) __builtin_clz((x));
+#elif defined(_MSC_VER)
+#define count_leading_zeros(x) __lzcnt((x))
+#else
+static int count_leading_zeros(int x) {
+    int n = 0;
+    const unsigned bits = sizeof(x) * 8;
+    for (int i = 1; i < bits; i ++) {
+        if (x < 0) break;
+        n ++;
+        x <<= 1;
+    }
+    return n;
+}
+#endif
+
 int frequencyScan(lje* self) {
     // Scan through the tile using the standard type 6 prediction
     // Need to cache the previous 2 row in target coordinates because of tiling
@@ -768,7 +785,7 @@ int frequencyScan(lje* self) {
             Px = rows[0][col] + ((rows[1][col-1] - rows[0][col-1])>>1);
         diff = rows[1][col] - Px;
         diff = diff%65536;
-        int ssss = 32 - __builtin_clz(abs(diff));
+        int ssss = 32 - count_leading_zeros(abs(diff));
         if (diff==0) ssss=0;
         self->hist[ssss]++;
         //printf("%d %d %d %d %d %d\n",col,row,p,Px,diff,ssss);
@@ -1058,7 +1075,7 @@ int writeBody(lje* self) {
             Px = rows[0][col] + ((rows[1][col-1] - rows[0][col-1])>>1);
         diff = rows[1][col] - Px;
         diff = diff%65536;
-        int ssss = 32 - __builtin_clz(abs(diff));
+        int ssss = 32 - count_leading_zeros(abs(diff));
         if (diff==0) ssss=0;
         //printf("%d %d %d %d %d\n",col,row,Px,diff,ssss);
 
