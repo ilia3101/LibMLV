@@ -29,7 +29,7 @@ void write_rules(FILE * makefile, char * ObjectFileExtension, char * CompilerOut
         while (*dot != '.') dot--;
         strcpy(dot, ObjectFileExtension);
 
-        strcpy(object_names[i], filename);
+        sprintf(object_names[i], "$(OBJ_FOLDER)/%s", filename);
     }
 
     /* Main rule */
@@ -39,7 +39,7 @@ void write_rules(FILE * makefile, char * ObjectFileExtension, char * CompilerOut
 
     for (int i = 0; i < NUM_SOURCE_FILES; ++i)
     {
-        fprintf(makefile, "\n\n$(OBJ_FOLDER)/%s:", object_names[i]);
+        fprintf(makefile, "\n\n%s:", object_names[i]);
 
         for (int j = 0; j < 100 && source_files[i][j] != NULL; ++j)
         {
