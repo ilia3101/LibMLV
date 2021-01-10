@@ -46,7 +46,7 @@ void write_rules(FILE * makefile, char * ObjectFileExtension, char * CompilerOut
             fprintf(makefile, " %s", source_files[i][j]);
         }
 
-        fprintf(makefile,"\n\t$(CC) $(CFLAGS) %s %s$(OBJ_FOLDER)/%s",
+        fprintf(makefile,"\n\t$(CC) $(CFLAGS) %s %s%s",
                 source_files[i][0], CompilerOutSetting, object_names[i]);
     }
 
