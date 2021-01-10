@@ -52,7 +52,7 @@ void write_rules(FILE * makefile, char * ObjectFileExtension, char * CompilerOut
 
     /* Clean rule */
     fprintf(makefile, "\n\nclean:\n\t%s", rm_Command);
-    for (int i = 0; i < NUM_SOURCE_FILES; ++i) fprintf(makefile, " $(OBJ_FOLDER)/%s", object_names[i]);
+    for (int i = 0; i < NUM_SOURCE_FILES; ++i) fprintf(makefile, " %s", object_names[i]);
     fprintf(makefile, " $(OBJ_FOLDER)/$(NAME).*");
 }
 
