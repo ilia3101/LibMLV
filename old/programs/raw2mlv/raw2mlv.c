@@ -119,6 +119,9 @@ int main(int argc, char ** argv)
     int output_fps_top = 24000;
     int output_fps_bottom = 1001;
     int binning = 1;
+    char * camera_name = NULL;
+    char * camera_make = NULL;
+    char * camera_model = NULL;
 
     /* Source data info */
     int source_bitdepth = 14; /* Will be figured out later */
@@ -149,6 +152,13 @@ int main(int argc, char ** argv)
             output_compression = atoi(argv[i+1]);
             char * compression = (output_compression) ? "none" : "LJ92";
             printf("Compression set to %i (none)\n", output_compression);
+            ++i;
+        } else if (!strcmp(argv[i], "--camera-name")) {
+            camera_name = malloc(strlen(argv[i+1]) + strlen(argv[i+2]) + 10);
+            camera_make = argv[i+1]; camera_model = argv[i+2];
+            sprintf(camera_name, "%s %s", camera_make, camera_model);
+            printf("Camera name set to %i\n", camera_name);
+            ++i;
             ++i;
         } else if (!strcmp(argv[i], "-f") || !strcmp(argv[i], "--framerate")) {
             output_fps_top = atoi(argv[i+1]);
@@ -219,7 +229,9 @@ int main(int argc, char ** argv)
             /*********************** Set camera info... ***********************/
 
             /* Try to look up adobe matrix */
-            CameraMatrixInfo_t * mat = FindCameraMatrixInfo(RawGetCamName(raw));
+            CameraMatrixInfo_t * mat;
+            if (camera_name == NULL) mat = FindCameraMatrixInfo(RawGetCamName(raw));
+            else mat = FindCameraMatrixInfo(camera_name);
             double * camera_matrix = NULL;
 
             /* If no matrix found from adobe, use libraw one (most likely the same) */
@@ -229,7 +241,7 @@ int main(int argc, char ** argv)
                 camera_matrix = RawGetMatrix(raw);}
 
             MLVWriterSetCameraInfo( writer,
-                                    RawGetCamName(raw), /* Camera name string */
+                                    (camera_name) ? camera_name : RawGetCamName(raw), /* Camera name string */
                                     camidGetCameraModel(RawGetCamName(raw)), /* Model ID (not necessary for an MLV to be valid) */
                                     camera_matrix /* Daylight camera matrix */);
 

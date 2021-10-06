@@ -1,6 +1,6 @@
 get_libraw()
 {
-	git clone https://github.com/LibRaw/LibRaw.git -b 0.19-stable;
+	git clone https://github.com/LibRaw/LibRaw.git;
 	cd LibRaw;
 	make -f Makefile.dist;
 	mv lib/libraw_r.a ../libraw_r.a;
