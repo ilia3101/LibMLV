@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include "libmlv.h"
 #include "libmlvaux.h"
 
 /* Simple implementations of mlv_Alloc, mlv_Reader and mlv_Close */
@@ -96,27 +97,51 @@ mlv_DataSource * mlvL_newDataSourceFromMainChunk(char * MainChunkFileName,
 mlv_DataSource * mlvL_newDataSourceFromChunks(char ** ChunkFileNames,
                                               int NumFiles)
 {
+    int err = 0;
     if (NumFiles > MLV_MAX_NUM_CHUNKS) return NULL;
 
     mlv_DataSource * datasource = mlv_newDataSource(mlv_alloc, NULL);
-    mlv_DataSourceSetReader(datasource, mlv_reader);
-    mlv_DataSourceSetCloser(datasource, mlv_close);
-    mlv_DataSourceSetChunkCount(datasource, NumFiles);
 
-    for (int c = 0; c < NumFiles; ++c)
+
+    if (datasource != NULL)
     {
-        FILE * file = fopen(ChunkFileNames[c], "r");
-        fseek(file, 0, SEEK_END);
-        uint64_t size = ftell(file);
-        fseek(file, 0, SEEK_SET);
+        mlv_DataSourceSetReader(datasource, mlv_reader);
+        mlv_DataSourceSetCloser(datasource, mlv_close);
+        mlv_DataSourceSetChunkCount(datasource, NumFiles);
 
-        mlv_DataSourceSetChunk(datasource,
-                               c,
-                               file,
-                               size,
-                               NULL,
-                               NULL);
+        for (int c = 0; c < NumFiles && !err; ++c)
+        {
+            if (ChunkFileNames[c] != NULL)
+            {
+                FILE * file = fopen(ChunkFileNames[c], "r");
+
+                if (file != NULL)
+                {
+                    fseek(file, 0, SEEK_END);
+                    uint64_t size = ftell(file);
+                    fseek(file, 0, SEEK_SET);
+
+                    mlv_DataSourceSetChunk(datasource,
+                                           c,
+                                           file,
+                                           size,
+                                           NULL,
+                                           NULL);
+                }
+                else err = 1;
+            }
+            else err = 1;
+        }
     }
 
-    return datasource;
+    if (err)
+    {
+        /* Something failed, so delete it and return NULL */
+        if (datasource != NULL) mlv_closeDataSource(datasource);
+        return NULL;
+    }
+    else
+    {
+        return datasource;
+    }
 }
