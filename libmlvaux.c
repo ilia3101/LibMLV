@@ -43,53 +43,31 @@ mlv_FrameExtractor * mlvL_newFrameExtractor()
     return mlv_newFrameExtractor(mlv_alloc, NULL);
 }
 
-mlv_DataSource * mlvL_newDataSourceFromMainChunk(char * MainChunkFileName,
-                                                 int SearchForAdditionalChunks)
+mlv_DataSource * mlvL_newDataSource(char * MainChunkFileName,
+                                    int SearchForAdditionalChunks)
 {
     mlv_DataSource * datasource = NULL;
-    FILE * files[MLV_MAX_NUM_CHUNKS] = {NULL};
-    uint64_t sizes[MLV_MAX_NUM_CHUNKS] = {0};
+    char * file_names[MLV_MAX_NUM_CHUNKS] = {NULL};
+    int num_files = 1;
+    file_names[0] = MainChunkFileName;
 
-    /* Try opening first file */    
-    files[0] = fopen(MainChunkFileName, "r");
-    
-    if (files[0] != NULL)
+    if (SearchForAdditionalChunks)
     {
-        int num_files = 1;
+        // TODO: search for other chunks here
 
-        if (SearchForAdditionalChunks)
-        {
-            // TODO
+        // size_t path_length = strlen(MainChunkFileName);
+        // char * path = malloc(path_length+1);
+        // strcpy(MainChunkFileName, path_copy);
 
-            // size_t path_length = strlen(MainChunkFileName);
-            // char * path = malloc(path_length+1);
-            // strcpy(MainChunkFileName, path_copy);
+        // int chunk_number = 0;
 
-            // int chunk_number = 0;
-
-            // do {
-            //     path[path_length-1] = '0' + (chunk_number % 10);
-            //     path[path_length-2] = '0' + (chunk_number / 10);
-            // } while (chunk_number < 100 && files[1+chunk_number] = fopen(path, "r"));
-        }
-
-        for (int i = 0; files[i] != NULL; ++i)
-        {
-            fseek(files[i], 0, SEEK_END);
-            sizes[i] = ftell(files[i]);
-            fseek(files[i], 0, SEEK_SET);
-        }
-
-        datasource = mlv_newDataSource(mlv_alloc, NULL);
-        mlv_DataSourceSetChunkCount(datasource, num_files);
-        mlv_DataSourceSetReader(datasource, mlv_reader);
-        mlv_DataSourceSetCloser(datasource, mlv_close);
-
-        for (int c = 0; c < num_files; ++c)
-        {
-            mlv_DataSourceSetChunk(datasource, c, files[c], sizes[c], NULL, NULL);
-        }
+        // do {
+        //     path[path_length-1] = '0' + (chunk_number % 10);
+        //     path[path_length-2] = '0' + (chunk_number / 10);
+        // } while (chunk_number < 100 && files[1+chunk_number] = fopen(path, "r"));
     }
+
+    datasource = mlvL_newDataSourceFromChunks(file_names, num_files);
 
     return datasource;
 }

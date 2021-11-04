@@ -80,6 +80,10 @@ uint64_t mlv_DataSourceGetChunkSize(mlv_DataSource * DataSource, int Chunk)
     {
         return DataSource->chunks[Chunk].size;
     }
+    else
+    {
+        return 0;
+    }
 }
 
 uint64_t mlv_DataSourceGetData(mlv_DataSource * DataSource,

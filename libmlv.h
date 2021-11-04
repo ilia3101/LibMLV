@@ -95,6 +95,10 @@ uint32_t mlv_IndexGetBlockData(mlv_Index * Index,
                                uint64_t BlockIndex,
                                mlv_DataSource * DataSource);
 
+// TEMPORARY
+void mlv_IndexPrint(mlv_Index * Index);
+uint64_t mlv_IndexGetSize(mlv_Index * Index); // how many entries
+
 /******************************************************************************/
 
 /***************************** MLV Frame Extractor ****************************/

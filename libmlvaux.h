@@ -7,8 +7,8 @@ mlv_Index * mlvL_newIndex();
 
 mlv_FrameExtractor * mlvL_newFrameExtractor();
 
-mlv_DataSource * mlvL_newDataSourceFromMainChunk(char * MainChunkFileName,
-                                                 int SearchForAdditionalChunks);
+mlv_DataSource * mlvL_newDataSource(char * MainChunkFileName,
+                                    int SearchForAdditionalChunks);
 
 mlv_DataSource * mlvL_newDataSourceFromChunks(char ** ChunkFileNames,
                                               int NumFiles);
