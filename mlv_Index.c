@@ -1,3 +1,5 @@
+#include <stdlib.h> // JUST FOR SORT FUNCTION, TEMPORARY
+
 #include "libmlv.h"
 
 /* How much data one index entry holds */
@@ -162,7 +164,7 @@ void mlv_IndexBuild(mlv_Index * Index,
             /* Size of the block's data excluding the header part (16 bytes) */
             int data_size = (block.size - sizeof(mlv_block));
             /* How many parts in the index are needed to represent this (round up) */
-            int parts = (block.size - 1) / ENTRY_BYTES + 1;
+            int parts = (data_size - 1) / ENTRY_BYTES + 1;
 
             /* If the block is huge, do not store all of it, so just use one entry */
             if (data_size > MAX_BLOCK_SIZE_TO_FULLY_STORE_IN_INDEX) parts = 1;
@@ -192,11 +194,12 @@ void mlv_IndexBuild(mlv_Index * Index,
 
             pos += block.size;
 
-// #ifdef DEBUG
-            printf("Block %c%c%c%c, size %llu, pos %llu, timestamp %llu, %s\n",
-                    block.type[0], block.type[1], block.type[2],
-                    block.type[3], block.size, pos, block.timestamp, (data_size <= MAX_BLOCK_SIZE_TO_FULLY_STORE_IN_INDEX) ? "Fully stored in index" : "");
-// #endif
+#ifndef NDEBUG
+            // printf("Block %c%c%c%c, size %llu, pos %llu, timestamp %llu, %s\n",
+            //         block.type[0], block.type[1], block.type[2],
+            //         block.type[3], (uint64_t)block.size, pos, block.timestamp,
+            //         (data_size <= MAX_BLOCK_SIZE_TO_FULLY_STORE_IN_INDEX) ? "Fully stored in index" : "");
+#endif
         }
 
         /* TODO: make these only increment IF the chunk has been finished.
@@ -210,10 +213,13 @@ void mlv_IndexBuild(mlv_Index * Index,
     Index->indexed_up_to.pos = pos;
 }
 
+static inline int extry_cmp(mlv_IndexEntry * A, mlv_IndexEntry * B);
+
 void mlv_IndexOptimise(mlv_Index * Index)
 {
-    // Sort the index for faster block finding. TODO: decide sorting comparison rules
-    // sort();
+    // Sort the index for faster block finding.
+    // TODO: dont use standard library (maybe make this an option)
+    qsort(Index->entries, Index->num_entries, sizeof(mlv_IndexEntry), extry_cmp);
 }
 
 uint32_t mlv_IndexGetBlockData(mlv_Index * Index,
@@ -227,4 +233,46 @@ uint32_t mlv_IndexGetBlockData(mlv_Index * Index,
     // for (int i = 0; i < mlv)
 
     mlv_IndexEntry * entry = Index->entries;
+}
+
+void mlv_IndexPrint(mlv_Index * Index)
+{
+    for (uint64_t i = 0; i < Index->num_entries; ++i)
+    {
+        mlv_IndexEntry entry = Index->entries[i];
+        if (entry.block_part != 0) printf("    - P%i | ", entry.block_part);
+        printf("Block %c%c%c%c, size %llu, pos %llu, timestamp %llu\n",
+                entry.block_type[0], entry.block_type[1], entry.block_type[2],
+                entry.block_type[3], (uint64_t)entry.block_size, entry.block_pos, entry.block_timestamp);
+    }
+}
+
+uint64_t mlv_IndexGetSize(mlv_Index * Index)
+{
+    return (Index->num_entries*sizeof(mlv_IndexEntry)) + sizeof(mlv_Index);
+}
+
+/* Comparison method for sorting and searching the index */
+#define BLOCKTYPE_INT(B) ((uint32_t)((B[0]<<24)|(B[1]<<16)|(B[2]<<8)|(B[3])))
+
+static inline int extry_cmp(mlv_IndexEntry * A, mlv_IndexEntry * B)
+{
+    /* Primarily sort by block type */
+    uint32_t type_of_a = BLOCKTYPE_INT(A->block_type);
+    uint32_t type_of_b = BLOCKTYPE_INT(B->block_type);
+    if (type_of_a > type_of_b) return 1;
+    else if (type_of_a < type_of_b) return -1;
+
+    /* Then sort by timestamp */
+    if (A->block_timestamp > B->block_timestamp) return 1;
+    else if (A->block_timestamp < B->block_timestamp) return -1;
+
+    /* Then sort by which part of the entry */
+    if (A->block_part > B->block_part) return 1;
+    else if (A->block_part < B->block_part) return -1;
+
+    /* If we've reached here, two entries are essentially are the same,
+     * and probably means an identical block was written to the MLV, or 
+     * something is very wrong */
+    return 0;
 }
