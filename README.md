@@ -11,3 +11,11 @@ For windows, download "Build Tools for Visual Studio 2022" (or whatever the late
 When installing, check "Desktop development with C++", then click install:
 
 ![Screenshot 2022-04-03 at 17 12 52](https://user-images.githubusercontent.com/23642861/161437468-8db69298-0c37-4916-930e-64728a264471.png)
+
+Use this command prompt for compiling:
+
+![Screenshot 2022-04-03 at 17 30 16](https://user-images.githubusercontent.com/23642861/161438095-4f790d38-88e2-43c5-b9e6-27af08fe74d4.png)
+
+On windows:
+- `make` -> `NMAKE`
+- `gcc`/`clang` -> `CL`
