@@ -6,4 +6,8 @@ The classes are also written to allocate memory in stack order, so you can make 
 
 ### Notes
 
-For windows, download "Build Tools for Visual Studio 2022" from https://visualstudio.microsoft.com/downloads/#other (scroll down) - I thjink?? Will check soon.
+For windows, download "Build Tools for Visual Studio 2022" (or whatever the latest year is) from https://visualstudio.microsoft.com/downloads/#other (scroll down)
+
+When installing, check "Desktop development with C++", then click install:
+
+![Screenshot 2022-04-03 at 17 12 52](https://user-images.githubusercontent.com/23642861/161437468-8db69298-0c37-4916-930e-64728a264471.png)
