@@ -26,8 +26,12 @@ int main(int argc, char ** argv)
         mlv_Index * index = mlvL_newIndex();
         mlv_FrameExtractor * frame_extractor = mlvL_newFrameExtractor();
 
-        /* Index the entire file */
-        mlv_IndexBuild(index, datasource, 0, 0);
+        /* Index the entire file all at once... */
+        // mlv_IndexBuild(index, datasource, 0);
+
+        /* ... or index the file in sections of 20 blocks */
+        while (!mlv_IndexIsComplete(index))
+            mlv_IndexBuild(index, datasource, 20);
 
         /* OPtimise index */
         mlv_IndexOptimise(index);
@@ -37,12 +41,12 @@ int main(int argc, char ** argv)
         /* Print the index */
         mlv_IndexPrint(index);
 
-        int frame_number_to_find = 69;
+        int frame_number_to_find = 2;
         int64_t frame_index = mlv_IndexFindEntry(index, 0,
                                                  "VIDF",
                                                  0, 0, 0,
                                                  0, 0, 0,
-                                                 1, /* Frame number = */ frame_number_to_find,
+                                                 1, frame_number_to_find,
                                                  1 );
 
         printf("\nFrame %i at %lld\n", frame_number_to_find, frame_index);

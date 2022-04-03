@@ -75,8 +75,10 @@ void mlv_closeIndex(mlv_Index * Index);
  * try to index the whole MLV. */
 void mlv_IndexBuild(mlv_Index * Index,
                     mlv_DataSource * DataSource,
-                    uint64_t MaxBytes,
                     uint64_t MaxBlocks);
+
+/* Checks if indexing is complete */
+int mlv_IndexIsComplete(mlv_Index * Index);
 
 /* This will optimise (sort) the index for better performance.
  * Call this after the clip is fully indexed otherwise it's a waste, as more

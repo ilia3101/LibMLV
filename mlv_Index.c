@@ -127,21 +127,24 @@ static mlv_IndexEntry * new_entry(mlv_Index * Index)
 
 void mlv_IndexBuild(mlv_Index * Index,
                     mlv_DataSource * DataSource,
-                    uint64_t MaxBytes,
                     uint64_t MaxBlocks)
 {
-    /* Reads into here */
+    /* Keep count for limiting */
+    uint64_t blocks_indexed = 0;
+
+    /* If no limit was given, set limit to U64 max */
+    if (MaxBlocks == 0) MaxBlocks = UINT64_MAX;
 
     int chunk = Index->indexed_up_to.chunk;
     uint64_t pos = Index->indexed_up_to.pos;
     int num_chunks = mlv_DataSourceGetNumChunks(DataSource);
 
     /* Keep indexing while 'healthy' */
-    while (Index->health == 0 && chunk < num_chunks)
+    while (Index->health == 0 && chunk < num_chunks && blocks_indexed < MaxBlocks)
     {
         uint64_t chunk_size = mlv_DataSourceGetChunkSize(DataSource, chunk);
 
-        while ((pos + sizeof(mlv_block)) < chunk_size)
+        while ((pos + sizeof(mlv_block)) < chunk_size && blocks_indexed < MaxBlocks)
         {
             mlv_block block;
 
@@ -201,27 +204,38 @@ void mlv_IndexBuild(mlv_Index * Index,
                         mlv_DataSourceGetData(DataSource, chunk, pos + sizeof(mlv_block) + ENTRY_BYTES * part, ENTRY_BYTES, entry->data);
                     }
                 }
+
+                /* Only count a block if it has been added to the index to make MaxBlocks
+                 * parameter more meaningful (there can be a lot of NULLS sometimes) */
+                ++blocks_indexed;
             }
 
             pos += block.size;
 
-#ifndef NDEBUG
             // printf("Block %c%c%c%c, size %llu, pos %llu, timestamp %llu, %s\n",
             //         block.type[0], block.type[1], block.type[2],
             //         block.type[3], (uint64_t)block.size, pos, block.timestamp,
             //         (data_size <= MAX_BLOCK_SIZE_TO_FULLY_STORE_IN_INDEX) ? "Fully stored in index" : "");
-#endif
         }
 
-        /* TODO: make these only increment IF the chunk has been finished.
+        /* DONE????????? TODO: make these only increment IF the chunk has been finished.
          * Currently this will go up every time this function is called which is
          * incorrect */
-        chunk++;
-        pos = 0;
+        if (pos >= chunk_size)
+        {
+            chunk++; /* DONE??? */
+            pos = 0;
+        }
     }
 
     Index->indexed_up_to.chunk = chunk;
     Index->indexed_up_to.pos = pos;
+    if (chunk == num_chunks) Index->indexing_is_complete = 1;
+}
+
+int mlv_IndexIsComplete(mlv_Index * Index)
+{
+    return Index->indexing_is_complete;
 }
 
 static inline int extry_cmp(mlv_IndexEntry * A, mlv_IndexEntry * B);
@@ -273,7 +287,7 @@ int64_t mlv_IndexFindEntry( mlv_Index * Index,
         }
 
         /* Now skip to next block in entries, skipping any additional entries for the same block. */
-        do { ++entry;puts("++entry"); } while (entry < Index->num_entries && Index->entries[entry].block_part != 0);
+        do { ++entry; } while (entry < Index->num_entries && Index->entries[entry].block_part != 0);
     }
 
     return match_at;
