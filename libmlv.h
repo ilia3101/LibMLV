@@ -33,7 +33,7 @@ void mlv_closeDataSource(mlv_DataSource * DataSource);
 /* Reader function, absolutely required for data source to work */
 void mlv_DataSourceSetReader(mlv_DataSource * DataSource, mlv_Reader Reader);
 
-/* Optional, can be NULL if u want */
+/* Optional, can be NULL if you 'close' the data sources/files afterwards */
 void mlv_DataSourceSetCloser(mlv_DataSource * DataSource, mlv_Close Closer);
 
 /* Set data pointer for chunk by index, (will be passed to reader and closer) */
@@ -80,20 +80,55 @@ void mlv_IndexBuild(mlv_Index * Index,
 
 /* This will optimise (sort) the index for better performance.
  * Call this after the clip is fully indexed otherwise it's a waste, as more
- * indexing will just undo the sorting and possibly make performance worse. */
+ * indexing will just undo the sorting just done by this. */
 void mlv_IndexOptimise(mlv_Index * Index);
+
+/* Returns position of an entry (represnting a block). Returns negative value
+ * if what you asked for is not found. If multiple blocks match your search
+ * parameters, you will get the first one of the matches. */
+int64_t mlv_IndexFindEntry( mlv_Index * Index,
+                            /* StartFrom - Pass zero, unless you are querying the same,
+                             * but want to find the next matching entry, then you may pass
+                             * the previous call's return value, and 2 to EntryNumber to get the next one. */
+                            uint64_t StartEntry,
+                            /* BlockType - Required, string such as "VIDF" */
+                            uint8_t * BlockType,
+                            /* Use block size as search criteria? - yes/no, min, max */
+                            int UseBlockSize, uint32_t MinBlockSize, uint32_t MaxBlockSize,
+                            /* Use block size as search criteria? - yes/no, min, max */
+                            int UseTimeStamp, uint64_t MinTimestamp, uint64_t MaxTimestamp,
+                            /* Use frame number as search criteria? - yes/no, value
+                             * Only use for AUDF and VIDF! */
+                            int UseFrameNumber, uint32_t FrameNumber,
+                            /* EntryNumber - which entry do you want to be found.
+                             * Pass 1 to get the first one that matches. Passing 2
+                             * will return the second matching entry and so on... */
+                            uint64_t EntryNumber );
 
 /* Retrieves data of a block. Will return how many bytes were output.
  * This function is able to retreive smaller blocks fully from the index without
- * using the datasource. If you do not pass a DataSource this function will
- * still do what is possible using only the index. */
+ * using the datasource. If you do not pass a DataSource, this function will
+ * do whatever is possible using only the index. */
 uint32_t mlv_IndexGetBlockData(mlv_Index * Index,
-                               uint8_t * BlockType,
-                               void * Out,
-                               uint32_t Offset,
-                               uint32_t NumBytes,
-                               uint64_t BlockIndex,
+                               uint64_t EntryID, /* Return value of mlv_IndexFindEntry */
+                               uint32_t Offset, /* Offset within the block from which to return data */
+                               uint32_t NumBytes, /* How many bytes to get */
+                               void * Out, /* Data output */
                                mlv_DataSource * DataSource);
+
+/* Returns size of a block based on it's entry ID, which you may get by using mlv_IndexFindEntry */
+uint32_t mlv_IndexGetBlockSize(mlv_Index * Index,
+                               uint64_t EntryID);
+
+/* Returns the file chunk and position of a block through output arguments */
+void mlv_IndexGetBlockLocation(mlv_Index * Index,
+                               int64_t EntryID,
+                               int * ChunkOut,
+                               uint64_t * PosOut);
+
+/* Returns timestamp of a block */
+uint64_t mlv_IndexGetBlockTimestamp(mlv_Index * Index,
+                                    int64_t EntryID);
 
 // TEMPORARY
 void mlv_IndexPrint(mlv_Index * Index);

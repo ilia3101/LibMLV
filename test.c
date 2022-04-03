@@ -13,28 +13,47 @@
 
 int main(int argc, char ** argv)
 {
-    printf("Will read file %s\n", argv[1]);
+    char * mlv_path = argv[1];
 
-    CREATE_TIMER(timer)
-    START_TIMER(timer)
+    if (mlv_path)
+    {
+        printf("Will read file %s\n", argv[1]);
 
-    mlv_DataSource * datasource = mlvL_newDataSource(argv[1], 0);
-    mlv_Index * index = mlvL_newIndex();
-    mlv_FrameExtractor * frame_extractor = mlvL_newFrameExtractor();
+        CREATE_TIMER(timer)
+        START_TIMER(timer)
 
-    /* Index the entire file */
-    mlv_IndexBuild(index, datasource, 0, 0);
+        mlv_DataSource * datasource = mlvL_newDataSource(argv[1], 1);
+        mlv_Index * index = mlvL_newIndex();
+        mlv_FrameExtractor * frame_extractor = mlvL_newFrameExtractor();
 
-    /* OPtimise index */
-    mlv_IndexOptimise(index);
+        /* Index the entire file */
+        mlv_IndexBuild(index, datasource, 0, 0);
 
-    END_TIMER(timer)
+        /* OPtimise index */
+        mlv_IndexOptimise(index);
 
-    /* Print the index */
-    mlv_IndexPrint(index);
+        END_TIMER(timer)
 
-    /* The timer can say 0 milliseconds sometimes cause its so fast */
-    printf("%.1fKiB index size, took %.1f milliseconds to build and optimise\n", mlv_IndexGetSize(index)/1024.0, GET_TIMER_RESULT(timer));
+        /* Print the index */
+        mlv_IndexPrint(index);
+
+        int frame_number_to_find = 69;
+        int64_t frame_index = mlv_IndexFindEntry(index, 0,
+                                                 "VIDF",
+                                                 0, 0, 0,
+                                                 0, 0, 0,
+                                                 1, /* Frame number = */ frame_number_to_find,
+                                                 1 );
+
+        printf("\nFrame %i at %lld\n", frame_number_to_find, frame_index);
+
+        /* The timer can say 0 milliseconds sometimes cause its so fast */
+        printf("\n%.1fKiB index size, took %.1f milliseconds to build and optimise\n", mlv_IndexGetSize(index)/1024.0, GET_TIMER_RESULT(timer));
+    }
+    else
+    {
+        puts("specify file when running thanks");
+    }
 
     return 0;
 }

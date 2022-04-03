@@ -1,6 +1,10 @@
 #include <stdlib.h> // JUST FOR SORT FUNCTION, TEMPORARY
+#include <stdint.h>
 
 #include "libmlv.h"
+
+/* For comparing block type strings */
+#define BLOCKTYPE_INT(B) ((uint32_t)((B[0]<<24)|(B[1]<<16)|(B[2]<<8)|(B[3])))
 
 /* How much data one index entry holds */
 #define ENTRY_BYTES 38
@@ -92,7 +96,8 @@ void mlv_closeIndex(mlv_Index * Index)
     mlv_Free(Index);
 }
 
-/* TODO: maybe re structure thhis fucntion */
+/* TODO: maybe re structure thhis fucntion.
+ * Allocates an entry in the index, using memory allocation, if required. */
 static mlv_IndexEntry * new_entry(mlv_Index * Index)
 {
     if (Index->health != 0 || Index->entries == NULL)
@@ -169,26 +174,32 @@ void mlv_IndexBuild(mlv_Index * Index,
             /* If the block is huge, do not store all of it, so just use one entry */
             if (data_size > MAX_BLOCK_SIZE_TO_FULLY_STORE_IN_INDEX) parts = 1;
 
-            for (int part = 0; Index->health == 0 && part < parts; ++part)
+            /* Exclude NULL blocks because they take up most of the index sometimes.
+             * Add any other exclusions to this if statement... */
+            int allow_nulls = 0;
+            if (allow_nulls || BLOCKTYPE_INT(block.type) != BLOCKTYPE_INT("NULL"))
             {
-                mlv_IndexEntry * entry = new_entry(Index);
-
-                if (entry == NULL)
+                for (int part = 0; Index->health == 0 && part < parts; ++part)
                 {
-                    // STOP!!! allocation error / memory error. Cannot continue at all.
-                    Index->health = 1;
-                }
-                else
-                {
-                    entry->block_chunk = chunk;
-                    entry->block_part = part;
-                    entry->block_pos = pos;
-                    entry->block_size = block.size;
-                    entry->block_timestamp = block.timestamp;
-                    for (int i = 0; i < 4; ++i) entry->block_type[i] = block.type[i];
+                    mlv_IndexEntry * entry = new_entry(Index);
 
-                    // TODO: check the return of this
-                    mlv_DataSourceGetData(DataSource, chunk, pos + sizeof(mlv_block) + ENTRY_BYTES * part, ENTRY_BYTES, entry->data);
+                    if (entry == NULL)
+                    {
+                        // STOP!!! allocation error / memory error. Cannot continue at all.
+                        Index->health = 1;
+                    }
+                    else
+                    {
+                        entry->block_chunk = chunk;
+                        entry->block_part = part;
+                        entry->block_pos = pos;
+                        entry->block_size = block.size;
+                        entry->block_timestamp = block.timestamp;
+                        for (int i = 0; i < 4; ++i) entry->block_type[i] = block.type[i];
+
+                        // TODO: check the return of this
+                        mlv_DataSourceGetData(DataSource, chunk, pos + sizeof(mlv_block) + ENTRY_BYTES * part, ENTRY_BYTES, entry->data);
+                    }
                 }
             }
 
@@ -219,20 +230,85 @@ void mlv_IndexOptimise(mlv_Index * Index)
 {
     // Sort the index for faster block finding.
     // TODO: dont use standard library (maybe make this an option)
-    qsort(Index->entries, Index->num_entries, sizeof(mlv_IndexEntry), extry_cmp);
+    if (Index->health == 0)
+        qsort(Index->entries, Index->num_entries, sizeof(mlv_IndexEntry), extry_cmp);
+}
+
+static inline int does_entry_match(mlv_IndexEntry * Entry,
+                                   uint32_t BlockType,
+                                   int UseBlockSize, uint32_t MinBlockSize, uint32_t MaxBlockSize,
+                                   int UseTimeStamp, uint64_t MinTimestamp, uint64_t MaxTimestamp,
+                                   int UseFrameNumber, uint32_t FrameNumber)
+{
+    return (BLOCKTYPE_INT(Entry->block_type) == BlockType)
+        && (!UseBlockSize || (Entry->block_size >= MinBlockSize && Entry->block_size <= MaxBlockSize))
+        && (!UseTimeStamp || (Entry->block_timestamp >= MinTimestamp && Entry->block_timestamp <= MaxTimestamp))
+        && (!UseFrameNumber || *((uint32_t *)Entry->data) == FrameNumber); /* Frame number is first uint32 after the block header in both VIDF and AUDF */
+}
+
+int64_t mlv_IndexFindEntry( mlv_Index * Index,
+                            uint64_t StartPos,
+                            uint8_t * BlockType,
+                            int UseBlockSize, uint32_t MinBlockSize, uint32_t MaxBlockSize,
+                            int UseTimeStamp, uint64_t MinTimestamp, uint64_t MaxTimestamp,
+                            int UseFrameNumber, uint32_t FrameNumber,
+                            uint64_t EntryNumber )
+{
+    /* Represent BlockType as int32 for easier comparison */
+    uint32_t block_type = BLOCKTYPE_INT(BlockType);
+
+    uint64_t entry = StartPos;
+    uint64_t num_matches = 0;
+    int64_t match_at = -1;
+
+    while (entry < Index->num_entries && num_matches != EntryNumber)
+    {
+        if (does_entry_match(&Index->entries[entry], block_type,
+                             UseBlockSize, MinBlockSize, MaxBlockSize,
+                             UseTimeStamp, MinTimestamp, MaxTimestamp,
+                             UseFrameNumber, FrameNumber))
+        {
+            num_matches++;
+            match_at = entry;
+        }
+
+        /* Now skip to next block in entries, skipping any additional entries for the same block. */
+        do { ++entry;puts("++entry"); } while (entry < Index->num_entries && Index->entries[entry].block_part != 0);
+    }
+
+    return match_at;
 }
 
 uint32_t mlv_IndexGetBlockData(mlv_Index * Index,
-                               uint8_t * BlockType,
-                               void * Out,
+                               uint64_t EntryID,
                                uint32_t Offset,
                                uint32_t NumBytes,
-                               uint64_t BlockIndex,
+                               void * Out,
                                mlv_DataSource * DataSource)
 {
-    // for (int i = 0; i < mlv)
+    return 1;
+}
 
-    mlv_IndexEntry * entry = Index->entries;
+uint32_t mlv_IndexGetBlockSize(mlv_Index * Index,
+                               uint64_t EntryID)
+{
+    return 1;
+}
+
+void mlv_IndexGetBlockLocation(mlv_Index * Index,
+                               int64_t EntryID,
+                               int * ChunkOut,
+                               uint64_t * PosOut)
+{
+    *ChunkOut = 0;
+    *PosOut = 0;
+    return;
+}
+
+uint64_t mlv_IndexGetBlockTimestamp(mlv_Index * Index,
+                                    int64_t EntryID)
+{
+    return 0;
 }
 
 void mlv_IndexPrint(mlv_Index * Index)
@@ -240,11 +316,19 @@ void mlv_IndexPrint(mlv_Index * Index)
     for (uint64_t i = 0; i < Index->num_entries; ++i)
     {
         mlv_IndexEntry entry = Index->entries[i];
-        if (entry.block_part != 0) printf("    - P%i | ", entry.block_part);
-        printf("Block %c%c%c%c, size %llu, pos %llu, timestamp %llu\n",
-                entry.block_type[0], entry.block_type[1], entry.block_type[2],
-                entry.block_type[3], (uint64_t)entry.block_size, entry.block_pos, entry.block_timestamp);
+        if (entry.block_part != 0) printf(" | P%i", entry.block_part);
+        else
+        {
+            int use_mb = entry.block_size >= (1024*1024*0.2);
+            char size_string[100];
+            if (use_mb) sprintf(size_string, "%.1lf MiB", (double)entry.block_size/(1024.0*1024.0));
+            else sprintf(size_string, "%llu bytes", (uint64_t)entry.block_size);
+            printf("\nBlock %c%c%c%c, size %s, pos %llu, timestamp %llu",
+                    entry.block_type[0], entry.block_type[1], entry.block_type[2],
+                    entry.block_type[3], size_string, entry.block_pos, entry.block_timestamp);
+        }
     }
+    puts("");
 }
 
 uint64_t mlv_IndexGetSize(mlv_Index * Index)
@@ -253,7 +337,6 @@ uint64_t mlv_IndexGetSize(mlv_Index * Index)
 }
 
 /* Comparison method for sorting and searching the index */
-#define BLOCKTYPE_INT(B) ((uint32_t)((B[0]<<24)|(B[1]<<16)|(B[2]<<8)|(B[3])))
 
 static inline int extry_cmp(mlv_IndexEntry * A, mlv_IndexEntry * B)
 {

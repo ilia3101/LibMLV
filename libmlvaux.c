@@ -43,31 +43,50 @@ mlv_FrameExtractor * mlvL_newFrameExtractor()
     return mlv_newFrameExtractor(mlv_alloc, NULL);
 }
 
+static int file_exists(char * path)
+{
+    FILE * file = fopen(path, "r");
+    fclose(file);
+    return (file == NULL) ? 0 : 1;
+}
+
 mlv_DataSource * mlvL_newDataSource(char * MainChunkFileName,
                                     int SearchForAdditionalChunks)
 {
     mlv_DataSource * datasource = NULL;
     char * file_names[MLV_MAX_NUM_CHUNKS] = {NULL};
-    int num_files = 1;
+    int num_chunks = 1;
     file_names[0] = MainChunkFileName;
 
     if (SearchForAdditionalChunks)
     {
         // TODO: search for other chunks here
+        uint64_t path_length = strlen(MainChunkFileName);
+        char * path = malloc(path_length+1);
+        strcpy(path, MainChunkFileName);
 
-        // size_t path_length = strlen(MainChunkFileName);
-        // char * path = malloc(path_length+1);
-        // strcpy(MainChunkFileName, path_copy);
-
-        // int chunk_number = 0;
-
-        // do {
-        //     path[path_length-1] = '0' + (chunk_number % 10);
-        //     path[path_length-2] = '0' + (chunk_number / 10);
-        // } while (chunk_number < 100 && files[1+chunk_number] = fopen(path, "r"));
+        do {
+            path[path_length-1] = '0' + ((num_chunks - 1) % 10);
+            path[path_length-2] = '0' + ((num_chunks - 1) / 10);
+            if (file_exists(path))
+            {
+                file_names[num_chunks] = malloc(path_length+1);
+                strcpy(file_names[num_chunks], path);
+                ++num_chunks;
+            }
+            else
+            {
+                break;
+            }
+        } while (num_chunks < MLV_MAX_NUM_CHUNKS);
     }
 
-    datasource = mlvL_newDataSourceFromChunks(file_names, num_files);
+    datasource = mlvL_newDataSourceFromChunks(file_names, num_chunks);
+
+    for (int c = num_chunks-1; c > 0; --c)
+    {
+        free(file_names[c]);
+    }
 
     return datasource;
 }
@@ -79,7 +98,6 @@ mlv_DataSource * mlvL_newDataSourceFromChunks(char ** ChunkFileNames,
     if (NumFiles > MLV_MAX_NUM_CHUNKS) return NULL;
 
     mlv_DataSource * datasource = mlv_newDataSource(mlv_alloc, NULL);
-
 
     if (datasource != NULL)
     {
