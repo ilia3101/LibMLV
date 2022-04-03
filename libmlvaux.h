@@ -13,4 +13,7 @@ mlv_DataSource * mlvL_newDataSource(char * MainChunkFileName,
 mlv_DataSource * mlvL_newDataSourceFromChunks(char ** ChunkFileNames,
                                               int NumFiles);
 
+/* Prints the index. For debugging. */
+void mlvL_IndexPrint(mlv_Index * Index);
+
 #endif

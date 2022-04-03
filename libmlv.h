@@ -70,9 +70,9 @@ typedef struct mlv_Index mlv_Index;
 mlv_Index * mlv_newIndex(mlv_Alloc Allocator, void * AllocatorUD);
 void mlv_closeIndex(mlv_Index * Index);
 
-/* Will perform indexing. MaxBytes and MaxBlocks can be used to limit how much
- * indexing this function will do in one go, if you pass zero to both, it will
- * try to index the whole MLV. */
+/* Will perform indexing.  MaxBlocks can be used to limit how much
+ * indexing this function will do in one go, if you pass zero, it will
+ * index the whole MLV. */
 void mlv_IndexBuild(mlv_Index * Index,
                     mlv_DataSource * DataSource,
                     uint64_t MaxBlocks);

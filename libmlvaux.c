@@ -141,3 +141,23 @@ mlv_DataSource * mlvL_newDataSourceFromChunks(char ** ChunkFileNames,
         return datasource;
     }
 }
+
+void mlvL_IndexPrint(mlv_Index * Index)
+{
+    for (uint64_t i = 0; i < Index->num_entries; ++i)
+    {
+        mlv_IndexEntry entry = Index->entries[i];
+        if (entry.block_part != 0) printf(" | P%i", entry.block_part);
+        else
+        {
+            int use_mb = entry.block_size >= (1024*1024*0.2);
+            char size_string[100];
+            if (use_mb) sprintf(size_string, "%.1lf MiB", (double)entry.block_size/(1024.0*1024.0));
+            else sprintf(size_string, "%llu bytes", (uint64_t)entry.block_size);
+            printf("\nBlock %c%c%c%c, size %s, pos %llu, timestamp %llu",
+                    entry.block_type[0], entry.block_type[1], entry.block_type[2],
+                    entry.block_type[3], size_string, entry.block_pos, entry.block_timestamp);
+        }
+    }
+    puts("");
+}
