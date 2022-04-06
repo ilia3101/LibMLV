@@ -84,6 +84,9 @@ int mlv_IndexIsComplete(mlv_Index * Index);
  * Call this after the clip is fully indexed otherwise it's a waste, as more
  * indexing will just undo the sorting just done by this. */
 void mlv_IndexOptimise(mlv_Index * Index);
+/* This will sort the index optimally for storing the file on disk. Good for exporting. */
+void mlv_IndexOptimiseForStorage(mlv_Index * Index);
+/* Other sorts? */
 
 /* Returns position of an entry (represnting a block). Returns negative value
  * if what you asked for is not found. If multiple blocks match your search
@@ -93,7 +96,8 @@ int64_t mlv_IndexFindEntry( mlv_Index * Index,
                              * but want to find the next matching entry, then you may pass
                              * the previous call's return value, and 2 to EntryNumber to get the next one. */
                             uint64_t StartEntry,
-                            /* BlockType - Required, string such as "VIDF" */
+                            /* BlockType - String such as "VIDF", if you pass NULL then it won't be used
+                             * as search criteria, which probably isn't very useful. */
                             uint8_t * BlockType,
                             /* Use block size as search criteria? - yes/no, min, max */
                             int UseBlockSize, uint32_t MinBlockSize, uint32_t MaxBlockSize,
@@ -106,6 +110,10 @@ int64_t mlv_IndexFindEntry( mlv_Index * Index,
                              * Pass 1 to get the first one that matches. Passing 2
                              * will return the second matching entry and so on... */
                             uint64_t EntryNumber );
+
+/* Returns entry ID of the next entry after the one you've provided.
+ * Returns -1 if there's no more entries left. */
+int64_t mlv_IndexGetNextEntry(mlv_Index * Index, uint64_t EntryID);
 
 /* Retrieves data of a block. Will return how many bytes were output.
  * This function is able to retreive smaller blocks fully from the index without
@@ -132,9 +140,16 @@ void mlv_IndexGetBlockLocation(mlv_Index * Index,
 uint64_t mlv_IndexGetBlockTimestamp(mlv_Index * Index,
                                     int64_t EntryID);
 
-// TEMPORARY
+/* Returns block type string (such as "VIDF") to Out */
+void mlv_IndexGetBlockType(mlv_Index * Index,
+                           int64_t EntryID,
+                           uint8_t * Out);
+
+/* Returns how much memory the index is using. */
+uint64_t mlv_IndexGetSize(mlv_Index * Index);
+
+/* Prints the index. For debugging. Will remove eventually. */
 void mlv_IndexPrint(mlv_Index * Index);
-uint64_t mlv_IndexGetSize(mlv_Index * Index); // how many entries
 
 /******************************************************************************/
 
@@ -170,7 +185,24 @@ void mlv_FrameExtractorFree(mlv_FrameExtractor * FrameExtractor);
 /******************************************************************************/
 
 /* MLV Constants */
-#define MLV_MAX_NUM_CHUNKS 101
+#define MLV_MAX_NUM_CHUNKS 101 /* .MLV + .M00-.M99 */
+/* TODO: decide if the following constants make sense...?? */
+#define MLV_MAX_CHUNK_SIZE ((uint64_t)274877906944) /* 256 GiB */
+#define MLV_MAX_IMAGEDATA_WIDTH 16384
+#define MLV_MAX_IMAGEDATA_HEIGHT 8192
+#define MLV_MIN_IMAGEDATA_WIDTH 8
+#define MLV_MIN_IMAGEDATA_HEIGHT 8
+
+/* Internal error codes... */
+#define LIBMLV_ERROR_INPUT 1
+#define LIBMLV_ERROR_MEMORY 2
+#define LIBMLV_ERROR_INTERNAL_ERROR 3
+#define LIBMLV_ERROR_BAD_PARAMETER 4
+/* MLV data related error codes... */
+#define LIBMLV_ERROR_MLV_IMPOSSIBLY_SMALL_BLOCKSIZE 5
+#define LIBMLV_ERROR_MLV_DATA_CORRUPTION 6
+#define LIBMLV_ERROR_MLV_WRONG_METADATA 7
+#define LIBMLV_ERROR_MLV_DECODING 8
 
 /* Private utility functions */
 void * mlv_Malloc(mlv_Alloc Allocator, void * AllocatorUD, uint64_t Size);

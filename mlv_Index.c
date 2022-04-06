@@ -35,7 +35,7 @@ typedef struct {
      * data in the index (only for blocks below a size threshold) */
     uint8_t block_part;
 
-    /* Data (always excludes the first 16 bytes) */
+    /* Data (always excludes the first 16 bytes, as in the header) */
     uint8_t data[ENTRY_BYTES];
 } mlv_IndexEntry;
 
@@ -169,19 +169,19 @@ void mlv_IndexBuild(mlv_Index * Index,
                 // STOP!!! TODO: decide if/when continuing to other chunks makes sense
             }
 
-            /* Size of the block's data excluding the header part (16 bytes) */
-            int data_size = (block.size - sizeof(mlv_block));
-            /* How many parts in the index are needed to represent this (round up) */
-            int parts = (data_size - 1) / ENTRY_BYTES + 1;
-
-            /* If the block is huge, do not store all of it, so just use one entry */
-            if (data_size > MAX_BLOCK_SIZE_TO_FULLY_STORE_IN_INDEX) parts = 1;
-
             /* Exclude NULL blocks because they take up most of the index sometimes.
              * Add any other exclusions to this if statement... */
             int allow_nulls = 0;
             if (allow_nulls || BLOCKTYPE_INT(block.type) != BLOCKTYPE_INT("NULL"))
             {
+                /* Size of the block's data excluding the header part (16 bytes) */
+                int data_size = (block.size - sizeof(mlv_block));
+                /* How many parts in the index are needed to represent this (round up) */
+                int parts = (data_size - 1) / ENTRY_BYTES + 1;
+
+                /* If the block is huge, do not store all of it, so just use one entry */
+                if (data_size > MAX_BLOCK_SIZE_TO_FULLY_STORE_IN_INDEX) parts = 1;
+
                 for (int part = 0; Index->health == 0 && part < parts; ++part)
                 {
                     mlv_IndexEntry * entry = new_entry(Index);
@@ -238,14 +238,22 @@ int mlv_IndexIsComplete(mlv_Index * Index)
     return Index->indexing_is_complete;
 }
 
-static inline int extry_cmp(mlv_IndexEntry * A, mlv_IndexEntry * B);
+static inline int entry_cmp_for_reading(mlv_IndexEntry * A, mlv_IndexEntry * B);
 
 void mlv_IndexOptimise(mlv_Index * Index)
 {
     // Sort the index for faster block finding.
     // TODO: dont use standard library (maybe make this an option)
     if (Index->health == 0)
-        qsort(Index->entries, Index->num_entries, sizeof(mlv_IndexEntry), extry_cmp);
+        qsort(Index->entries, Index->num_entries, sizeof(mlv_IndexEntry), entry_cmp_for_reading);
+}
+
+static inline int entry_cmp_for_storage(mlv_IndexEntry * A, mlv_IndexEntry * B);
+
+void mlv_IndexOptimiseForStorage(mlv_Index * Index)
+{
+    if (Index->health == 0)
+        qsort(Index->entries, Index->num_entries, sizeof(mlv_IndexEntry), entry_cmp_for_storage);
 }
 
 static inline int does_entry_match(mlv_IndexEntry * Entry,
@@ -254,7 +262,7 @@ static inline int does_entry_match(mlv_IndexEntry * Entry,
                                    int UseTimeStamp, uint64_t MinTimestamp, uint64_t MaxTimestamp,
                                    int UseFrameNumber, uint32_t FrameNumber)
 {
-    return (BLOCKTYPE_INT(Entry->block_type) == BlockType)
+    return (!BlockType || (BLOCKTYPE_INT(Entry->block_type) == BlockType))
         && (!UseBlockSize || (Entry->block_size >= MinBlockSize && Entry->block_size <= MaxBlockSize))
         && (!UseTimeStamp || (Entry->block_timestamp >= MinTimestamp && Entry->block_timestamp <= MaxTimestamp))
         && (!UseFrameNumber || *((uint32_t *)Entry->data) == FrameNumber); /* Frame number is first uint32 after the block header in both VIDF and AUDF */
@@ -269,7 +277,8 @@ int64_t mlv_IndexFindEntry( mlv_Index * Index,
                             uint64_t EntryNumber )
 {
     /* Represent BlockType as int32 for easier comparison */
-    uint32_t block_type = BLOCKTYPE_INT(BlockType);
+    uint32_t block_type = 0;
+    if (BlockType != NULL) block_type = BLOCKTYPE_INT(BlockType);
 
     uint64_t entry = StartPos;
     uint64_t num_matches = 0;
@@ -293,6 +302,68 @@ int64_t mlv_IndexFindEntry( mlv_Index * Index,
     return match_at;
 }
 
+int64_t mlv_IndexGetNextEntry(mlv_Index * Index, uint64_t EntryID)
+{
+    int64_t next = -1;
+
+    int64_t entry = EntryID;
+    do {
+        ++entry;
+    } while (entry < Index->num_entries && Index->entries[entry].block_part != 0);
+
+    if (entry < Index->num_entries) next = entry;
+    return next;
+}
+
+/**************** mlv_IndexGetBlockData implementation ****************/
+
+typedef struct {
+    uint8_t * data;
+    uint32_t num_bytes;
+} data_fragment_t;
+
+/* Returns number of copied bytes. TODO: confirm this isn't broken. */
+static uint32_t copy_fragmented_data(data_fragment_t * Fragments, int NumFragments, uint32_t Offset, uint32_t BytesToCopy, uint8_t * Output)
+{
+    int fragments_left = NumFragments;
+    data_fragment_t * fragment = Fragments;
+
+    /* Skip first fragments */
+    while (Offset > fragment->num_bytes && fragments_left > 0)
+    {
+        Offset -= fragment->num_bytes;
+        fragment += 1;
+        fragments_left -= 1;
+    }
+
+    uint32_t bytes_copied = 0;
+    uint32_t bytes_left = BytesToCopy;
+
+    /* Now do copying. */
+    while (fragments_left > 0 && bytes_left > 0)
+    {
+        uint32_t bytes_this_fragment = fragment->num_bytes - Offset;
+        if (bytes_left < bytes_this_fragment) bytes_this_fragment = bytes_left;
+
+        for (uint32_t i = 0; i < bytes_this_fragment; ++i) Output[i] = fragment->data[i];
+
+        Output += bytes_this_fragment;
+        bytes_copied += bytes_this_fragment;
+        bytes_left -= bytes_this_fragment;
+        fragment++;
+        fragments_left--;
+        Offset = 0; /* Set to 0, as it won't be needed after the first iteration. */
+    }
+
+    return bytes_copied;
+}
+
+/* Checks if two entries are representing the same block */
+static inline int is_entry_same_block(mlv_IndexEntry * A, mlv_IndexEntry * B)
+{
+    return (A->block_chunk == B->block_chunk) && (A->block_pos == B->block_pos);
+}
+
 uint32_t mlv_IndexGetBlockData(mlv_Index * Index,
                                uint64_t EntryID,
                                uint32_t Offset,
@@ -300,13 +371,61 @@ uint32_t mlv_IndexGetBlockData(mlv_Index * Index,
                                void * Out,
                                mlv_DataSource * DataSource)
 {
-    return 1;
+    mlv_IndexEntry * entry = &Index->entries[EntryID];
+    uint8_t * t = entry->block_type;
+
+    /* Reconstruct the block's first 16 bytes */
+    mlv_block block_header = {
+        .type = {t[0],t[1],t[2],t[3]},
+        .size = entry->block_size,
+        .timestamp = entry->block_timestamp
+    };
+
+    /* This should be enough. Watch out! - It might stop being enough if
+     * MAX_BLOCK_SIZE_TO_FULLY_STORE_IN_INDEX is significantly increased!!!! */
+#define MAX_FRAGMENTS 16
+
+    int num_fragments = 1;
+    data_fragment_t data_fragments[MAX_FRAGMENTS] = {
+        {
+            .data = &block_header,
+            .num_bytes = sizeof(mlv_block)
+        }
+    };
+
+    /* Add all index entries as fragments... */
+    uint64_t entry_id = EntryID;
+    if (Offset+NumBytes > sizeof(mlv_block))
+    {
+        while (entry_id < Index->num_entries && is_entry_same_block(entry, &Index->entries[entry_id]) && num_fragments < MAX_FRAGMENTS)
+        {
+            data_fragments[num_fragments] = (data_fragment_t){
+                .data = Index->entries[entry_id].data,
+                .num_bytes = sizeof(Index->entries[entry_id].data)
+            };
+            ++num_fragments;
+            ++entry_id;
+        }
+    }
+
+    uint64_t bytes_copied = copy_fragmented_data(data_fragments, num_fragments, Offset, NumBytes, Out);
+
+    if (bytes_copied != NumBytes && DataSource != NULL)
+    {
+        /* Read the rest from the file now. */
+        bytes_copied += mlv_DataSourceGetData(DataSource, entry->block_chunk,
+                                              entry->block_pos+Offset+bytes_copied,
+                                              NumBytes-bytes_copied,
+                                              ((uint8_t *)Out)+bytes_copied);
+    }
+
+    return bytes_copied;
 }
 
 uint32_t mlv_IndexGetBlockSize(mlv_Index * Index,
                                uint64_t EntryID)
 {
-    return 1;
+    return Index->entries[EntryID].block_size;
 }
 
 void mlv_IndexGetBlockLocation(mlv_Index * Index,
@@ -314,15 +433,21 @@ void mlv_IndexGetBlockLocation(mlv_Index * Index,
                                int * ChunkOut,
                                uint64_t * PosOut)
 {
-    *ChunkOut = 0;
-    *PosOut = 0;
-    return;
+    *ChunkOut = Index->entries[EntryID].block_chunk;
+    *PosOut = Index->entries[EntryID].block_pos;
 }
 
 uint64_t mlv_IndexGetBlockTimestamp(mlv_Index * Index,
                                     int64_t EntryID)
 {
-    return 0;
+    return Index->entries[EntryID].block_timestamp;
+}
+
+void mlv_IndexGetBlockType(mlv_Index * Index,
+                           int64_t EntryID,
+                           uint8_t * Out)
+{
+    for (int i = 0; i < 4; ++i) Out[i] = Index->entries[EntryID].block_type[i];
 }
 
 uint64_t mlv_IndexGetSize(mlv_Index * Index)
@@ -330,9 +455,9 @@ uint64_t mlv_IndexGetSize(mlv_Index * Index)
     return (Index->num_entries*sizeof(mlv_IndexEntry)) + sizeof(mlv_Index);
 }
 
-/* Comparison method for sorting and searching the index */
+/* Comparison methods for sorting and searching the index */
 
-static inline int extry_cmp(mlv_IndexEntry * A, mlv_IndexEntry * B)
+static inline int entry_cmp_for_reading(mlv_IndexEntry * A, mlv_IndexEntry * B)
 {
     /* Primarily sort by block type */
     uint32_t type_of_a = BLOCKTYPE_INT(A->block_type);
@@ -352,4 +477,79 @@ static inline int extry_cmp(mlv_IndexEntry * A, mlv_IndexEntry * B)
      * and probably means an identical block was written to the MLV, or 
      * something is very wrong */
     return 0;
+}
+
+static inline int is_frame(uint32_t type)
+{
+    return type == BLOCKTYPE_INT("VIDF") || type == BLOCKTYPE_INT("AUDF");
+}
+
+static inline int is_MLVI(uint32_t type)
+{
+    return type == BLOCKTYPE_INT("MLVI");
+}
+
+/* Optimal sort for storage */
+static inline int entry_cmp_for_storage(mlv_IndexEntry * A, mlv_IndexEntry * B)
+{
+    /* Primarily sort by block type */
+    uint32_t type_of_a = BLOCKTYPE_INT(A->block_type);
+    uint32_t type_of_b = BLOCKTYPE_INT(B->block_type);
+
+    /* Puts everything before frame (audio and video) data, and MLVI first. */
+    type_of_a = is_frame(type_of_a) ? 2 : (is_MLVI(type_of_a) ? 0 : 1);
+    type_of_b = is_frame(type_of_b) ? 2 : (is_MLVI(type_of_b) ? 0 : 1);
+
+    if (type_of_a > type_of_b) return 1;
+    else if (type_of_a < type_of_b) return -1;
+
+    /* Then sort by timestamp */
+    if (A->block_timestamp > B->block_timestamp) return 1;
+    else if (A->block_timestamp < B->block_timestamp) return -1;
+
+    /* Then sort by which part of the entry */
+    if (A->block_part > B->block_part) return 1;
+    else if (A->block_part < B->block_part) return -1;
+
+    /* If we've reached here, two entries are essentially are the same,
+     * and probably means an identical block was written to the MLV, or 
+     * something is very wrong */
+    return 0;
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+void mlv_IndexPrint(mlv_Index * Index)
+{
+    for (uint64_t i = 0; i < Index->num_entries; ++i)
+    {
+        mlv_IndexEntry entry = Index->entries[i];
+        if (entry.block_part != 0) printf(" | P%i", entry.block_part);
+        else
+        {
+            int use_mb = entry.block_size >= (1024*1024*0.2);
+            char size_string[100];
+            if (use_mb) sprintf(size_string, "%.1lf MiB", (double)entry.block_size/(1024.0*1024.0));
+            else sprintf(size_string, "%llu bytes", (uint64_t)entry.block_size);
+            printf("\nBlock %c%c%c%c, size %s, pos %llu, timestamp %llu",
+                    entry.block_type[0], entry.block_type[1], entry.block_type[2],
+                    entry.block_type[3], size_string, entry.block_pos, entry.block_timestamp);
+        }
+    }
+    puts("");
 }

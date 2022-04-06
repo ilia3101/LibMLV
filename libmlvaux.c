@@ -54,38 +54,41 @@ mlv_DataSource * mlvL_newDataSource(char * MainChunkFileName,
                                     int SearchForAdditionalChunks)
 {
     mlv_DataSource * datasource = NULL;
-    char * file_names[MLV_MAX_NUM_CHUNKS] = {NULL};
-    int num_chunks = 1;
-    file_names[0] = MainChunkFileName;
 
-    if (SearchForAdditionalChunks)
+    if (file_exists(MainChunkFileName))
     {
-        // TODO: search for other chunks here
-        uint64_t path_length = strlen(MainChunkFileName);
-        char * path = malloc(path_length+1);
-        strcpy(path, MainChunkFileName);
+        char * file_names[MLV_MAX_NUM_CHUNKS] = {NULL};
+        int num_chunks = 1;
+        file_names[0] = MainChunkFileName;
 
-        do {
-            path[path_length-1] = '0' + ((num_chunks - 1) % 10);
-            path[path_length-2] = '0' + ((num_chunks - 1) / 10);
-            if (file_exists(path))
-            {
-                file_names[num_chunks] = malloc(path_length+1);
-                strcpy(file_names[num_chunks], path);
-                ++num_chunks;
-            }
-            else
-            {
-                break;
-            }
-        } while (num_chunks < MLV_MAX_NUM_CHUNKS);
-    }
+        if (SearchForAdditionalChunks)
+        {
+            uint64_t path_length = strlen(MainChunkFileName);
+            char * path = malloc(path_length+1);
+            strcpy(path, MainChunkFileName);
 
-    datasource = mlvL_newDataSourceFromChunks(file_names, num_chunks);
+            do {
+                path[path_length-1] = '0' + ((num_chunks - 1) % 10);
+                path[path_length-2] = '0' + ((num_chunks - 1) / 10);
+                if (file_exists(path))
+                {
+                    file_names[num_chunks] = malloc(path_length+1);
+                    strcpy(file_names[num_chunks], path);
+                    ++num_chunks;
+                }
+                else
+                {
+                    break;
+                }
+            } while (num_chunks < MLV_MAX_NUM_CHUNKS);
+        }
 
-    for (int c = num_chunks-1; c > 0; --c)
-    {
-        free(file_names[c]);
+        datasource = mlvL_newDataSourceFromChunks(file_names, num_chunks);
+
+        for (int c = num_chunks-1; c > 0; --c)
+        {
+            free(file_names[c]);
+        }
     }
 
     return datasource;
@@ -117,12 +120,7 @@ mlv_DataSource * mlvL_newDataSourceFromChunks(char ** ChunkFileNames,
                     uint64_t size = ftell(file);
                     fseek(file, 0, SEEK_SET);
 
-                    mlv_DataSourceSetChunk(datasource,
-                                           c,
-                                           file,
-                                           size,
-                                           NULL,
-                                           NULL);
+                    mlv_DataSourceSetChunk(datasource, c, file, size, NULL, NULL);
                 }
                 else err = 1;
             }
@@ -140,24 +138,4 @@ mlv_DataSource * mlvL_newDataSourceFromChunks(char ** ChunkFileNames,
     {
         return datasource;
     }
-}
-
-void mlvL_IndexPrint(mlv_Index * Index)
-{
-    for (uint64_t i = 0; i < Index->num_entries; ++i)
-    {
-        mlv_IndexEntry entry = Index->entries[i];
-        if (entry.block_part != 0) printf(" | P%i", entry.block_part);
-        else
-        {
-            int use_mb = entry.block_size >= (1024*1024*0.2);
-            char size_string[100];
-            if (use_mb) sprintf(size_string, "%.1lf MiB", (double)entry.block_size/(1024.0*1024.0));
-            else sprintf(size_string, "%llu bytes", (uint64_t)entry.block_size);
-            printf("\nBlock %c%c%c%c, size %s, pos %llu, timestamp %llu",
-                    entry.block_type[0], entry.block_type[1], entry.block_type[2],
-                    entry.block_type[3], size_string, entry.block_pos, entry.block_timestamp);
-        }
-    }
-    puts("");
 }
