@@ -383,7 +383,12 @@ uint32_t mlv_IndexGetBlockData(mlv_Index * Index,
 
     /* This should be enough. Watch out! - It might stop being enough if
      * MAX_BLOCK_SIZE_TO_FULLY_STORE_IN_INDEX is significantly increased!!!! */
-#define MAX_FRAGMENTS 16
+#define MAX_FRAGMENTS 11
+    /* A nice error to help out... */
+#if MAX_FRAGMENTS < ((MAX_BLOCK_SIZE_TO_FULLY_STORE_IN_INDEX-16)/ENTRY_BYTES+1)
+#error Not enough fragments to represent data stored in index!\
+ May cause unnecessary file reads and is wasteful. Increase the number of fragments.
+#endif
 
     int num_fragments = 1;
     data_fragment_t data_fragments[MAX_FRAGMENTS] = {
